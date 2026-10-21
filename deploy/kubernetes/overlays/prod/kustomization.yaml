@@ -9,7 +9,7 @@ labels:
       environment: prod
 
 # Pin to a specific image tag — do not use "latest" in production.
-# The update-image workflow tags builds from main with the 7-char commit SHA.
+# The update-image workflow sets newTag to the 7-char commit SHA on each build from main.
 images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
-    newTag: "1.0.0" # TODO: update to the desired image tag
+    newTag: "1.0.0"

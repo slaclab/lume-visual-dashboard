@@ -4,6 +4,11 @@ on:
     push:
         branches:
             - main
+        # These paths are excluded by .dockerignore, so they never change the image.
+        paths-ignore:
+            - "deploy/**"
+            - "docs/**"
+            - "**/*.md"
     workflow_dispatch:
         inputs:
             image_tag:
@@ -11,10 +16,15 @@ on:
                 required: false
                 default: ""
 
+# Serialize runs so concurrent pushes to main don't race when committing the tag bump.
+concurrency:
+    group: update-image-${{ github.ref }}
+    cancel-in-progress: false
+
 jobs:
     deploy:
         permissions:
-            contents: read
+            contents: write # commit the new image tag to the prod overlay
             packages: write
             attestations: write
             id-token: write
@@ -60,3 +70,21 @@ jobs:
                   docker tag $IMAGE_NAME:$IMAGE_TAG ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
             - name: Push Docker image
               run: docker push ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
+
+            # Argo CD deploys whatever is in git, so commit the new tag to the prod
+            # overlay. Pushes made with GITHUB_TOKEN don't trigger new workflow runs.
+            - name: Update prod overlay image tag
+              if: github.ref == 'refs/heads/main'
+              env:
+                  OVERLAY: deploy/kubernetes/overlays/prod/kustomization.yaml
+              run: |
+                  sed -i -E "s|^([[:space:]]*newTag:).*|\1 \"${IMAGE_TAG}\"|" "$OVERLAY"
+                  grep -q "newTag: \"${IMAGE_TAG}\"" "$OVERLAY"
+                  git add "$OVERLAY"
+                  if git diff --cached --quiet; then
+                    echo "Prod overlay already at ${IMAGE_TAG}"
+                    exit 0
+                  fi
+                  git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG} to prod"
+                  git pull --rebase origin main
+                  git push origin HEAD:main

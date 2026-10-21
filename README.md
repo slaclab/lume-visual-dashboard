@@ -86,7 +86,9 @@ Manifests live in `deploy/kubernetes` and are managed with Kustomize:
 - `overlays/dev/` — dev cluster (sets the dev domain, uses the `latest` image)
 - `overlays/prod/` — prod cluster (pins a specific image tag)
 
-Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow (manual dispatch; builds from `main` are tagged with the short commit SHA). Update `newTag` in the overlay, then apply:
+Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow. It runs on every push to `main` (except changes limited to `deploy/`, `docs/`, or Markdown) and can also be run manually. Builds from `main` are tagged with the 7-character commit SHA, and the workflow commits that tag to `overlays/prod/kustomization.yaml`. Argo CD (configured in [slaclab/ad-argocd-apps](https://github.com/slaclab/ad-argocd-apps)) watches the prod overlay on `main` and syncs it to the cluster automatically.
+
+To preview or apply manually instead:
 
 ```sh
 kubectl kustomize deploy/kubernetes/overlays/prod   # preview
