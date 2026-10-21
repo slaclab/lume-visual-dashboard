@@ -12,12 +12,12 @@ images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
     newTag: latest
 
-# The dev cluster uses a different domain than prod; the path stays the same.
-patches:
-  - target:
-      kind: Ingress
-      name: lume-visual-dashboard
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: dev-cluster.example.slac.stanford.edu # TODO: set to the dev cluster's domain
+# # The dev cluster uses a different domain than prod; the path stays the same.
+# patches:
+#   - target:
+#       kind: Ingress
+#       name: lume-visual-dashboard
+#     patch: |-
+#       - op: replace
+#         path: /spec/rules/0/host
+#         value: dev-cluster.example.slac.stanford.edu # TODO: set to the dev cluster's domain
