@@ -53,6 +53,48 @@ pnpm install
 | `pnpm format` | Format source files with Prettier |
 | `pnpm format:check` | Check formatting without writing |
 
+## Docker
+
+Run the Vite dev server with hot reloading at `http://localhost:5173`:
+
+```sh
+docker compose up
+```
+
+The project directory is bind-mounted into the container, and `node_modules` lives in a Docker volume so it doesn't conflict with your host install. Dependencies are re-synced from the lockfile each time the container starts.
+
+`Dockerfile` is for local development only. The production image used by Kubernetes is built from `Dockerfile.prod` (static build served by unprivileged nginx on port 8080, with a health check at `/healthz`).
+
+To run the production image locally via compose (served at `http://localhost:8080`):
+
+```sh
+docker compose --profile prod up --build
+```
+
+The production image is built for the `/lume-visual-dashboard/` URL path by default. Override `BASE_PATH` to serve it from the root when running it standalone:
+
+```sh
+docker build -f Dockerfile.prod --build-arg BASE_PATH=/ -t lume-visual-dashboard .
+docker run --rm -p 8080:8080 lume-visual-dashboard
+```
+
+## Kubernetes
+
+Manifests live in `deploy/kubernetes` and are managed with Kustomize:
+
+- `base/` — Namespace, Deployment, Service, and Ingress serving the app at `/lume-visual-dashboard`
+- `overlays/dev/` — dev cluster (sets the dev domain, uses the `latest` image)
+- `overlays/prod/` — prod cluster (pins a specific image tag)
+
+Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow (manual dispatch; builds from `main` are tagged with the short commit SHA). Update `newTag` in the overlay, then apply:
+
+```sh
+kubectl kustomize deploy/kubernetes/overlays/prod   # preview
+kubectl apply -k deploy/kubernetes/overlays/prod
+```
+
+The ingress strips the `/lume-visual-dashboard` prefix before forwarding to nginx, so if the path changes, update both the ingress and the `BASE_PATH` build arg in `Dockerfile.prod`.
+
 ## Documentation
 
 The `docs/` directory contains a [Zensical](https://zensical.org) documentation site. To preview it locally:

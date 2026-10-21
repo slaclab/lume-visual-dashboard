@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lume-visual-dashboard
+  labels:
+    app.kubernetes.io/name: lume-visual-dashboard
+  annotations:
+    nginx.ingress.kubernetes.io/whitelist-source-range: "71.198.255.25,134.79.0.0/16,172.16.0.0/12,208.45.173.162,216.46.165.69,172.27.8.0/24"
+    # Strip the /lume-visual-dashboard prefix so nginx in the pod serves from /.
+    # The image is built with BASE_PATH=/lume-visual-dashboard/ so asset URLs
+    # in index.html keep the prefix and route back through this ingress.
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ard-modeling-service.slac.stanford.edu
+      http:
+        paths:
+          - path: /lume-visual-dashboard(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: lume-visual-dashboard
+                port:
+                  name: http

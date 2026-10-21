@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      environment: prod
+
+# Pin to a specific image tag — do not use "latest" in production.
+# The update-image workflow tags builds from main with the 7-char commit SHA.
+images:
+  - name: ghcr.io/slaclab/lume-visual-dashboard
+    newTag: "1.0.0" # TODO: update to the desired image tag

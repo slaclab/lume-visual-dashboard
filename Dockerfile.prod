@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+
+# Production image used for the Kubernetes deployment (deploy/kubernetes).
+# For local development, use Dockerfile via `docker compose up`.
+
+# ---- Build: compile the static Vite bundle ----
+FROM node:24-alpine AS build
+
+ENV PNPM_HOME=/pnpm \
+    PATH=/pnpm:$PATH \
+    HUSKY=0 \
+    CI=true
+
+RUN corepack enable
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+COPY . .
+
+# URL path the app is served under. The ingress strips this prefix before
+# forwarding to nginx, but asset URLs in index.html must still include it.
+ARG BASE_PATH=/lume-visual-dashboard/
+RUN pnpm exec tsc -b && pnpm exec vite build --base="${BASE_PATH}"
+
+# ---- Runtime: static files served by unprivileged nginx (UID 101, port 8080) ----
+FROM nginxinc/nginx-unprivileged:stable-alpine AS runtime
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

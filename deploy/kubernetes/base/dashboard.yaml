@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lume-visual-dashboard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lume-visual-dashboard
+  labels:
+    app.kubernetes.io/name: lume-visual-dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lume-visual-dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lume-visual-dashboard
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: dashboard
+          image: lume-visual-dashboard-image
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # nginx writes its pid file and temp buffers to /tmp
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lume-visual-dashboard
+  labels:
+    app.kubernetes.io/name: lume-visual-dashboard
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: lume-visual-dashboard
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http

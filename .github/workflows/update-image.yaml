@@ -1,0 +1,59 @@
+name: Update Docker Image
+
+on:
+    workflow_dispatch:
+        inputs:
+            image_tag:
+                description: "Docker image tag to push (optional, defaults to 'latest' if not on main branch or short SHA if on main branch)"
+                required: false
+                default: ""
+
+jobs:
+    deploy:
+        permissions:
+            contents: read
+            packages: write
+            attestations: write
+            id-token: write
+        runs-on: ubuntu-latest
+        env:
+            IMAGE_NAME: lume-visual-dashboard
+            REGISTRY: ghcr.io
+
+            REPO: ${{ github.repository_owner }}/${IMAGE_NAME}
+        steps:
+            - name: Set lower case repo owner and image name
+              run: |
+                  echo OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
+                  echo REPO_LC=$(echo ${REPO} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
+            - name: Checkout repository
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - name: Configure git
+              run: |
+                  git config --global user.name "github-actions"
+                  git config --global user.email "github-actions@github.com"
+            - name: Set IMAGE_TAG
+              run: |
+                  if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+                    SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+                    echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
+                  else
+                    if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
+                      echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+                    else
+                      echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+                    fi
+                  fi
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+            - name: Log in to GitHub Container Registry
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            - name: Build Docker image
+              run: |
+                  docker build -f Dockerfile.prod -t $IMAGE_NAME:$IMAGE_TAG . --provenance=false
+                  docker tag $IMAGE_NAME:$IMAGE_TAG ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
+            - name: Push Docker image
+              run: docker push ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
