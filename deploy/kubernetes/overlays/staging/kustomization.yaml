@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      environment: staging
+
+# The update-image workflow sets newTag to the 7-char commit SHA on each build from staging.
+images:
+  - name: ghcr.io/slaclab/lume-visual-dashboard
+    newTag: latest
+
+# The dev cluster used for staging has a different domain than prod
+patches:
+  - target:
+      kind: Ingress
+      name: lume-visual-dashboard
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: ad-accel-online-ml-dev.slac.stanford.edu

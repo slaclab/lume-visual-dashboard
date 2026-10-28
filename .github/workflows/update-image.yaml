@@ -1,90 +1,98 @@
 name: Update Docker Image
 
 on:
-    push:
-        branches:
-            - main
-        # These paths are excluded by .dockerignore, so they never change the image.
-        paths-ignore:
-            - "deploy/**"
-            - "docs/**"
-            - "**/*.md"
-    workflow_dispatch:
-        inputs:
-            image_tag:
-                description: "Docker image tag to push (optional, defaults to 'latest' if not on main branch or short SHA if on main branch)"
-                required: false
-                default: ""
+  push:
+    branches:
+      - main
+      - staging
+    # These paths are excluded by .dockerignore, so they never change the image.
+    paths-ignore:
+      - "deploy/**"
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to push (optional, defaults to 'latest' unless on main/staging where it is the short SHA)"
+        required: false
+        default: ""
 
 # Serialize runs so concurrent pushes to main don't race when committing the tag bump.
 concurrency:
-    group: update-image-${{ github.ref }}
-    cancel-in-progress: false
+  group: update-image-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-    deploy:
-        permissions:
-            contents: write # commit the new image tag to the prod overlay
-            packages: write
-            attestations: write
-            id-token: write
-        runs-on: ubuntu-latest
-        env:
-            IMAGE_NAME: lume-visual-dashboard
-            REGISTRY: ghcr.io
+  deploy:
+    permissions:
+      contents: write # commit the new image tag to the prod/staging overlay
+      packages: write
+      attestations: write
+      id-token: write
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: lume-visual-dashboard
+      REGISTRY: ghcr.io
 
-            REPO: ${{ github.repository_owner }}/${IMAGE_NAME}
-        steps:
-            - name: Set lower case repo owner and image name
-              run: |
-                  echo OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
-                  echo REPO_LC=$(echo ${REPO} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
-            - name: Checkout repository
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      REPO: ${{ github.repository_owner }}/${IMAGE_NAME}
+    steps:
+      - name: Set lower case repo owner and image name
+        run: |
+          echo OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
+          echo REPO_LC=$(echo ${REPO} | tr '[:upper:]' '[:lower:]') >>${GITHUB_ENV}
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - name: Configure git
-              run: |
-                  git config --global user.name "github-actions"
-                  git config --global user.email "github-actions@github.com"
-            - name: Set IMAGE_TAG
-              run: |
-                  if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-                    SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
-                    echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
-                  else
-                    if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
-                      echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
-                    else
-                      echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-                    fi
-                  fi
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+      - name: Set IMAGE_TAG
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/main" || "${GITHUB_REF}" == "refs/heads/staging" ]]; then
+            SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+            echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
+          else
+            if [[ -n "${{ github.event.inputs.image_tag }}" ]]; then
+              echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+            else
+              echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+            fi
+          fi
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-            - name: Log in to GitHub Container Registry
-              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-            - name: Build Docker image
-              run: |
-                  docker build -f Dockerfile.prod -t $IMAGE_NAME:$IMAGE_TAG . --provenance=false
-                  docker tag $IMAGE_NAME:$IMAGE_TAG ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
-            - name: Push Docker image
-              run: docker push ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
+      - name: Build Docker image
+        run: |
+          docker build -f Dockerfile.prod -t $IMAGE_NAME:$IMAGE_TAG . --provenance=false
+          docker tag $IMAGE_NAME:$IMAGE_TAG ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
+      - name: Push Docker image
+        run: docker push ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
 
-            # Argo CD deploys whatever is in git, so commit the new tag to the prod
-            # overlay. Pushes made with GITHUB_TOKEN don't trigger new workflow runs.
-            - name: Update prod overlay image tag
-              if: github.ref == 'refs/heads/main'
-              env:
-                  OVERLAY: deploy/kubernetes/overlays/prod/kustomization.yaml
-              run: |
-                  sed -i -E "s|^([[:space:]]*newTag:).*|\1 \"${IMAGE_TAG}\"|" "$OVERLAY"
-                  grep -q "newTag: \"${IMAGE_TAG}\"" "$OVERLAY"
-                  git add "$OVERLAY"
-                  if git diff --cached --quiet; then
-                    echo "Prod overlay already at ${IMAGE_TAG}"
-                    exit 0
-                  fi
-                  git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG} to prod"
-                  git pull --rebase origin main
-                  git push origin HEAD:main
+      # Argo CD deploys whatever is in git, so commit the new tag to the overlay
+      # for the branch that triggered the build (main -> prod, staging ->
+      # staging). Pushes made with GITHUB_TOKEN don't trigger new workflow runs.
+      - name: Update overlay image tag
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            ENVIRONMENT=prod
+            BRANCH=main
+          else
+            ENVIRONMENT=staging
+            BRANCH=staging
+          fi
+          OVERLAY="deploy/kubernetes/overlays/${ENVIRONMENT}/kustomization.yaml"
+          sed -i -E "s|^([[:space:]]*newTag:).*|\1 \"${IMAGE_TAG}\"|" "$OVERLAY"
+          grep -q "newTag: \"${IMAGE_TAG}\"" "$OVERLAY"
+          git add "$OVERLAY"
+          if git diff --cached --quiet; then
+            echo "${ENVIRONMENT} overlay already at ${IMAGE_TAG}"
+            exit 0
+          fi
+          git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG} to ${ENVIRONMENT}"
+          git pull --rebase origin "${BRANCH}"
+          git push origin "HEAD:${BRANCH}"
