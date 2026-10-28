@@ -38,3 +38,5 @@ lerna-debug.log*
 
 # MkDocs
 site/
+
+.pnpm-store/
