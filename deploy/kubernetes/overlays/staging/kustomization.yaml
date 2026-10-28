@@ -11,7 +11,7 @@ labels:
 # The update-image workflow sets newTag to the 7-char commit SHA on each build from staging.
 images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
-    newTag: latest
+    newTag: "a9300eb"
 
 # The dev cluster used for staging has a different domain than prod
 patches:
