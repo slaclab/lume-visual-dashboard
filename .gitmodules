@@ -1,0 +1,8 @@
+[submodule "external/lume-model-api"]
+	path = external/lume-model-api
+	url = https://github.com/slaclab/lume-model-api.git
+	branch = main
+[submodule "external/canopy"]
+	path = external/canopy
+	url = https://github.com/slaclab/canopy.git
+	branch = main
