@@ -40,11 +40,14 @@ export interface RequestOptions {
   method?: 'GET' | 'POST';
   body?: unknown;
   signal?: AbortSignal;
+  /** Overrides the lume-model-api base URL, e.g. to call Canopy. */
+  baseUrl?: string;
+  headers?: Record<string, string>;
 }
 
 export async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const url = `${getBaseUrl()}${path}`;
-  const { method = 'GET', body, signal } = options;
+  const { method = 'GET', body, signal, baseUrl = getBaseUrl(), headers } = options;
+  const url = `${baseUrl}${path}`;
 
   const response = await fetch(url, {
     method,
@@ -52,6 +55,7 @@ export async function fetchJson<T>(path: string, options: RequestOptions = {}): 
     headers: {
       Accept: 'application/json',
       ...(body !== undefined && { 'Content-Type': 'application/json' }),
+      ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });

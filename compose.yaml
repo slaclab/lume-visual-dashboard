@@ -14,56 +14,23 @@ services:
       - pnpm_store:/pnpm/store
     # Re-sync dependencies on start so lockfile changes are picked up without a rebuild
     command: sh -c "pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0"
-    # The browser (not this container) calls the API, at http://localhost:8000 by default.
+    # The browser (not this container) calls the APIs: lume-model-api at http://localhost:8000
+    # and Canopy at http://localhost:8050 by default.
     depends_on:
       - lume-model-api
-
-  # lume-model-api hosting the in-repo `demo` model with synthetic live inputs.
-  # Lightweight (no Bmad/torch), runs natively on arm64, and reloads on source edits.
-  #   http://localhost:8000/docs
-  lume-model-api:
-    build:
-      context: ./external/lume-model-api
-      dockerfile_inline: |
-        FROM python:3.12-slim
-        ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
-        WORKDIR /app
-        # Install dependencies before copying the code so this layer is cached.
-        COPY pyproject.toml README.md ./
-        RUN python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml', 'rb'))['project']['dependencies']))" > /tmp/requirements.txt \
-            && pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
-        COPY lume_model_api/ ./lume_model_api/
-        RUN pip install --no-deps -e .
-        EXPOSE 8000
-    ports:
-      - "8000:8000"
-    environment:
-      LUME_MODELS: demo
-      LUME_LIVE_SOURCE: synthetic
-      LUME_POOL_WORKERS: 2
-    volumes:
-      - ./external/lume-model-api/lume_model_api:/app/lume_model_api
-    command: >
-      uvicorn lume_model_api.api.main:app --host 0.0.0.0 --port 8000
-      --reload --reload-dir /app/lume_model_api
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
-      interval: 10s
-      timeout: 5s
-      start_period: 30s
+      - canopy
 
   # lume-model-api with the real cu_hxr_staged model, built from the upstream Dockerfile
   # (conda, Bmad, torch, lattices). The image is amd64-only, so on Apple Silicon it builds and
   # runs under emulation and is slow. Live inputs are synthetic since EPICS is unreachable.
   #   docker compose --profile full up --build
-  #   http://localhost:8001/docs  (set VITE_LUME_API_BASE_URL=http://localhost:8001 to use it)
-  lume-model-api-full:
-    profiles: [full]
+  #   http://localhost:8000/docs  (set VITE_LUME_API_BASE_URL=http://localhost:8000 to use it)
+  lume-model-api:
     build:
       context: ./external/lume-model-api
     platform: linux/amd64
     ports:
-      - "8001:8000"
+      - "8000:8000"
     environment:
       LUME_MODELS: cu_hxr_staged
       LUME_LIVE_SOURCE: synthetic
@@ -85,6 +52,61 @@ services:
         BASE_PATH: /
     ports:
       - "8080:8080"
+
+  # Canopy API (Hare live-PV broker). Defaults to the simulated EPICS backend: every PV name
+  # resolves to synthetic data, so no IOC is needed. Runs without Postgres/Redis, which only
+  # Squirrel, Magpie, Jobs and database-backed API keys use. Reloads on source edits.
+  #   http://localhost:8050/docs
+  #   curl -H "X-API-Key: dev" http://localhost:8050/hare/v1/pvs/TEST:SINE
+  # To use a real IOC, set CANOPY_EPICS__BACKEND=epics and the EPICS_* address lists in a
+  # repo-root `.env` (see .env.example). Bridged networking can't carry broadcast discovery,
+  # so list IOC addresses explicitly (host.docker.internal for an IOC on this machine).
+  canopy:
+    build:
+      context: ./external/canopy
+      # Mirrors upstream docker/Dockerfile.dev, minus `COPY .git/`: in a submodule `.git` is a
+      # pointer file into the parent repo, so hatch-vcs can't derive a version in the image.
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ make git \
+            && rm -rf /var/lib/apt/lists/*
+        COPY pyproject.toml uv.lock ./
+        RUN uv sync --frozen --no-install-project
+        COPY src/ ./src/
+        COPY scripts/ ./scripts/
+        # Scoped to this step so dependencies built from sdists keep their own versions.
+        RUN SETUPTOOLS_SCM_PRETEND_VERSION=0.0.0+dev uv sync --frozen
+        ENV PATH="/app/.venv/bin:$$PATH"
+        EXPOSE 8000
+    # PyPI has no linux/arm64 wheels for p4p/pvxslibs; built from source they mismatch
+    # ("PVXS ABI mismatch") and the epics backend can't start. The locked amd64 wheels match,
+    # so on Apple Silicon this runs under emulation.
+    platform: linux/amd64
+    ports:
+      - "${CANOPY_HOST_PORT:-8050}:8000"
+    environment:
+      CANOPY_EPICS__BACKEND: ${CANOPY_EPICS__BACKEND:-simulation}
+      CANOPY_EPICS__CA_TIMEOUT_S: ${CANOPY_EPICS__CA_TIMEOUT_S:-5}
+      CANOPY_EPICS__PVA_TIMEOUT_S: ${CANOPY_EPICS__PVA_TIMEOUT_S:-5}
+      CANOPY_DEBUG: "true"
+      # Read-only key limited to Hare; the dashboard sends it as X-API-Key.
+      CANOPY_API_KEYS: dev:read@hare
+      EPICS_CA_ADDR_LIST: ${EPICS_CA_ADDR_LIST:-}
+      EPICS_CA_AUTO_ADDR_LIST: ${EPICS_CA_AUTO_ADDR_LIST:-NO}
+      EPICS_PVA_ADDR_LIST: ${EPICS_PVA_ADDR_LIST:-}
+      EPICS_PVA_AUTO_ADDR_LIST: ${EPICS_PVA_AUTO_ADDR_LIST:-NO}
+    volumes:
+      - ./external/canopy/src:/app/src
+    command: >
+      uvicorn canopy.main:app --host 0.0.0.0 --port 8000
+      --reload --reload-dir /app/src
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
 
 volumes:
   node_modules:
