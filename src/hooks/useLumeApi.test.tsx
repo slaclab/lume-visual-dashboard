@@ -53,7 +53,9 @@ describe('useModels', () => {
 
 describe('useModelConfig', () => {
   it('is idle until a model name is given', () => {
-    const { result } = renderHook(() => useModelConfig(undefined), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useModelConfig(undefined), {
+      wrapper: createWrapper(),
+    });
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.isPending).toBe(true);
   });
@@ -80,7 +82,9 @@ describe('useMachineSnapshot', () => {
   it('loads the snapshot', async () => {
     const snapshot = { inputs: { Q: 1 }, sources: { Q: 'live' } };
     server.use(http.get(api('/models/demo/machine-snapshot'), () => HttpResponse.json(snapshot)));
-    const { result } = renderHook(() => useMachineSnapshot('demo'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useMachineSnapshot('demo'), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.data).toEqual(snapshot));
   });
 });

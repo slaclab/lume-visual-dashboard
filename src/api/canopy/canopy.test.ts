@@ -61,7 +61,10 @@ describe('hare endpoints', () => {
         HttpResponse.json({ pv: params.pv, valueKind: 'scalar', units: 'mm', precision: 2 })
       )
     );
-    await expect(describePv('TEST:POS')).resolves.toMatchObject({ pv: 'TEST:POS', units: 'mm' });
+    await expect(describePv('TEST:POS')).resolves.toMatchObject({
+      pv: 'TEST:POS',
+      units: 'mm',
+    });
   });
 });
 

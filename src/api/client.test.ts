@@ -36,7 +36,9 @@ describe('fetchJson', () => {
     server.use(
       http.post(`${TEST_BASE_URL}/invalid`, () =>
         HttpResponse.json(
-          { detail: [{ msg: 'too big', loc: ['body'], type: 'x' }, { msg: 'not finite' }] },
+          {
+            detail: [{ msg: 'too big', loc: ['body'], type: 'x' }, { msg: 'not finite' }],
+          },
           { status: 422 }
         )
       )

@@ -34,11 +34,21 @@ services:
     environment:
       LUME_MODELS: cu_hxr_staged
       LUME_LIVE_SOURCE: synthetic
+    # Compose never restarts unhealthy containers itself, so the healthcheck stops uvicorn
+    # (PID 1) on a 503 and this policy brings it back. Connection errors during startup don't.
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      test:
+        - CMD-SHELL
+        - >-
+          code=$$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/healthz);
+          [ "$$code" = 200 ] && exit 0;
+          [ "$$code" = 503 ] && kill 1;
+          exit 1
       interval: 15s
       timeout: 5s
       start_period: 180s
+   
 
   # Production build served by nginx, for testing the real image locally.
   #   docker compose --profile prod up --build
