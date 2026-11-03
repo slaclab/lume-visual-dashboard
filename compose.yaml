@@ -32,7 +32,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      LUME_MODELS: cu_hxr_staged
+      LUME_MODELS: '{"cu_hxr_staged": {"kwargs": {"n_particles": 1000, "end_element": "OTR3"}}}'
       LUME_LIVE_SOURCE: synthetic
     # Compose never restarts unhealthy containers itself, so the healthcheck stops uvicorn
     # (PID 1) on a 503 and this policy brings it back. Connection errors during startup don't.

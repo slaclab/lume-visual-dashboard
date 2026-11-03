@@ -1,20 +1,27 @@
 # lume-model-api issues
 
-Issues found while developing the dashboard. Each section is written to be copied into a GitHub issue on lume-model-api.
+Each section below is written to be copied into a GitHub issue on
+[slaclab/lume-model-api](https://github.com/slaclab/lume-model-api). Checked against `main` at
+`e5c6dab` and the dev cluster (`ghcr.io/slaclab/lume-model-api:dev`) on 2026-11-03.
 
 ---
 
-## Evaluate returns 500 when an array output contains strings
+## `POST /evaluate` returns 500 when a requested array output contains strings
 
 **Labels:** bug
 
 ### Description
 
-`POST /api/v1/models/{name}/evaluate` fails with `500 Internal Server Error` when the requested outputs include an `NDVariable` whose values are not numeric. For `cu_hxr_staged`, the `name` output (kind `array`, shape `[180]`, `StatVariable`) contains lattice element names such as `'BEGINNING'`. The array serializer can only encode float32, so the whole request fails, not just that output.
+`POST /api/v1/models/{name}/evaluate` returns `500 Internal Server Error` when `outputs` includes
+an `NDVariable` with non-numeric values. On `cu_hxr_staged`, the `name` output (a `StatVariable`)
+holds lattice element names such as `'BEGINNING'`. `encode_f32` (`api/serialize.py`) can only
+encode float32, so it raises, and the whole request fails, including any valid outputs requested
+alongside it.
 
-Because `/config` reports `name` as `kind: "array"`, a client cannot tell it apart from numeric arrays and has no way to avoid it other than hard-coding the id.
+`GET /config` publishes `name` as `kind: "array"`, the same as numeric arrays, so a client has no
+way to know from the contract that requesting it will fail.
 
-### Steps to reproduce
+### Reproduce locally
 
 1. Run the API with `cu_hxr_staged`.
 2. Send:
@@ -26,11 +33,45 @@ Because `/config` reports `name` as `kind: "array"`, a client cannot tell it apa
    { "outputs": ["name"] }
    ```
 
+Without `end_element`, `name` has shape `[180]`. The request fails the same way at any shape.
+
+### Reproduce on the dev cluster
+
+This is read-only and doesn't affect the pods. The ingress only accepts SLAC-internal addresses.
+
+```bash
+BASE=https://ad-accel-online-ml-dev.slac.stanford.edu/lume-model-api
+
+# 1. The contract says `name` is an array output.
+curl -s "$BASE/api/v1/models/cu_hxr_staged/config" | jq '.outputs[] | select(.id == "name")'
+# {"id": "name", "kind": "array", "unit": "", "shape": [29], "element_name": null,
+#  "variable_class": "StatVariable", "alias_of": null}
+
+# 2. Requesting it fails the whole request.
+curl -s -X POST "$BASE/api/v1/models/cu_hxr_staged/evaluate" \
+  -H 'Content-Type: application/json' \
+  -d '{"outputs": ["name"]}' \
+  -w '\nHTTP %{http_code}\n'
+# Internal Server Error
+# HTTP 500
+
+# 3. Traceback. The request can land on either eval pod, so read both.
+kubectl -n lume-model-api logs -l app=lume-model-api-eval --prefix --tail=200 \
+  | grep -B2 -A2 'could not convert string to float'
+```
+
 ### Expected
 
-Either the output is returned in a form that fits its content (for example `kind: "value"` with a list of strings), or `/config` classifies it so clients know not to request it as an array.
+One of:
+
+- the output is returned in a form that fits its content, for example `kind: "value"` with a list
+  of strings, or
+- `/config` classifies it so clients know not to request it as an array, or
+- the request is rejected with a `4xx` that names the output.
 
 ### Actual
+
+`500 Internal Server Error` with no body detail. Server log:
 
 ```text
 File "/app/lume_model_api/api/serialize.py", line 28, in encode_f32
@@ -38,39 +79,105 @@ File "/app/lume_model_api/api/serialize.py", line 28, in encode_f32
 ValueError: could not convert string to float: 'BEGINNING'
 ```
 
-The response is `500 Internal Server Error`.
-
 ### Suggested fix
 
-- In `variable_kind` (`model/introspect.py`), or wherever array outputs are classified, report non-numeric `NDVariable`s as `"value"` instead of `"array"`.
-- Alternatively, have `serialize_array` check the dtype and fall back to a `value` payload for non-numeric data rather than raising.
-- At minimum, a single output that can't be serialized should not fail the entire evaluate request.
-
-### Dashboard workaround
-
-The dashboard requests only `kind === "scalar"` outputs (`src/components/ModelConfig.tsx`).
+- In `variable_kind` (`model/introspect.py`), report an `NDVariable` with a non-numeric dtype as
+  `"value"` instead of `"array"`.
+- Or have the array serializer check the dtype and fall back to a `value` payload instead of
+  raising.
+- Either way, one output that can't be serialized shouldn't fail every other output in the
+  request.
 
 ---
 
-## An unstable input setting marks the model pool dead until the pod restarts
+## An in-range input that makes the Tao orbit unstable restarts the eval pod
 
-**Labels:** bug
+**Labels:** bug, enhancement
 
 ### Description
 
-When a set of inputs makes the Tao lattice unstable, `model.set()` raises a `TaoCommandError` ("UNSTABLE ORBIT AT EVALUATION POINT"). `evaluate()` turns any exception from `model.set()` into `ModelUnusable`, which marks the pool for that model dead. After that, every evaluate request returns `503 Service Unavailable` and `GET /healthz` fails until the pod restarts.
+Some input values inside the range `GET /config` publishes make the Tao lattice unstable.
+`model.set()` raises `TaoCommandError` ("UNSTABLE ORBIT AT EVALUATION POINT"), `evaluate()` wraps
+it as `ModelUnusable`, and `pool._attempt_recovery` finds no `recover()` on the model. The worker
+latches, the pool is marked dead, every evaluate on that pod returns `503`, and `/healthz` fails
+until the probes restart the pod.
 
-An unstable orbit is a valid physics result for an out-of-range setting, not a broken model. Any user dragging an interactive slider to an extreme can take the API down for everyone.
+The 503 and restart are the documented behavior for a model that can't recover
+(`docs/maintainer/DESIGN_DECISIONS.md`, "Model failures are 503, not 400" and "Recovery belongs in
+the model"). The problem is that this path can be reached with an ordinary request that passes
+validation:
 
-### Steps to reproduce
+- The value is inside the published `min`/`max`, so clients that respect `/config` can still send
+  it. `scripts/check_poisoned_worker.py` notes that `BEND:LI21:215:BCTRL = 0.209` is inside its
+  published range `[0.11, 0.33]`.
+- An interactive client sweeping an input can trigger it. Repeating the request across replicas can
+  restart every eval pod, so one user can make evaluate unavailable for everyone until the restarts
+  finish.
+- `DESIGN_DECISIONS.md` notes that from lume-bmad `0.1.1` (pinned `0.1.2`), a bend set that Tao
+  rejects already restores the model's previous state, and a test on 2026-10-28 found the restored
+  instance usable. The service still treats this case as unrecoverable.
+
+### Reproduce locally
 
 1. Run the API with `cu_hxr_staged`.
-2. Evaluate with one or more magnet inputs (for example a `QUAD:*:BCTRL`) set to a value that makes the orbit unstable.
+2. Evaluate with one or more magnet inputs (for example a `QUAD:*:BCTRL`) set to a value that
+   makes the orbit unstable.
 3. Send any further evaluate request.
+
+### Reproduce on the dev cluster
+
+**Warning: this poisons the eval workers it reaches and restarts those pods.** Coordinate before
+running it on the shared dev cluster.
+
+The dev eval Deployment sets `end_element: "OTR3"`, so its `/config` publishes 16 inputs and
+**doesn't include** `BEND:LI21:215:BCTRL`, the trigger used by `scripts/check_poisoned_worker.py`.
+Run against dev as it is, that script gets a `400` for an unknown input rather than reproducing
+the bug. The only bend dev publishes is `BEND:IN20:661:BCTRL` (default `0.1350`, range
+`[0.0675, 0.2025]`). The value below is about 5% off default and inside that range. **It hasn't
+been confirmed to trigger the unstable orbit on dev.** If it returns `200`, step it further from
+the default while staying inside the range.
+
+```bash
+BASE=https://ad-accel-online-ml-dev.slac.stanford.edu/lume-model-api
+NS=lume-model-api
+
+# 1. Baseline: pods healthy, note the RESTARTS column.
+kubectl -n $NS get pods -l app=lume-model-api-eval
+
+# 2. Send the in-range bend setting. There are 2 eval replicas behind the ingress, so repeat it
+#    to reach both.
+for i in 1 2 3 4; do
+  curl -s -X POST "$BASE/api/v1/models/cu_hxr_staged/evaluate" \
+    -H 'Content-Type: application/json' \
+    -d '{"inputs": {"BEND:IN20:661:BCTRL": 0.142}, "outputs": ["QUAD:IN20:525:BACT"], "max_particles": 5}' \
+    -w '  HTTP %{http_code}\n' -o /dev/null
+done
+
+# 3. A request that sets nothing now fails too.
+curl -s -X POST "$BASE/api/v1/models/cu_hxr_staged/evaluate" \
+  -H 'Content-Type: application/json' \
+  -d '{"inputs": {}, "outputs": ["QUAD:IN20:525:BACT"], "max_particles": 5}' \
+  -w '\nHTTP %{http_code}\n'
+# expected while poisoned: HTTP 503
+
+# 4. Watch the readiness/liveness probes fail and the pods restart.
+kubectl -n $NS get pods -l app=lume-model-api-eval -w
+
+# 5. The Tao error and the dead-pool message are in the previous container's log.
+kubectl -n $NS logs <eval-pod-name> --previous | grep -E 'UNSTABLE ORBIT|ModelUnusable|is dead'
+
+# 6. If the pods don't come back on their own:
+kubectl -n $NS rollout restart deployment/lume-model-api-eval
+```
+
+To use the known trigger instead, deploy a model entry without `end_element`, then run
+`LUME_API=$BASE python scripts/check_poisoned_worker.py`.
 
 ### Expected
 
-The bad request fails with a client error (for example `422` with the Tao message), the model is restored to its previous or baseline state, and later requests succeed.
+The request that produced the unstable orbit fails with a client error (for example `422` with
+the Tao message), the model is back at its previous or baseline state, and later requests on that
+worker succeed. The pod isn't restarted.
 
 ### Actual
 
@@ -86,10 +193,12 @@ ERROR:lume_model_api.api.pool:Pool for model 'cu_hxr_staged' is dead (unusable).
 
 ### Suggested fix
 
-- Recognise recoverable Tao errors (such as unstable orbit) in `evaluate()` (`model/evaluate.py`), re-apply the baseline or last good inputs, and return a `422` instead of raising `ModelUnusable`.
-- If the model can't be reliably reset in-process, restart only the affected worker rather than marking the whole pool dead.
-- Consider publishing input ranges in `/config` that are known to keep the lattice stable, so clients can bound sliders.
-
-### Dashboard workaround
-
-None on the client side. Restart the API container (`docker compose restart`) after this happens.
+- Add the `recover()` described in "Recovery belongs in the model" (disable lattice calc, write
+  back baseline controls, restore `track_type`, re-enable calc, refresh state) to lume-bmad or
+  virtual-accelerator, so `_attempt_recovery` returns `ok` and the pool stays alive. Track that
+  here if it lands in another repo.
+- Given that lume-bmad `>=0.1.1` already restores state after a rejected bend set, consider
+  treating the unstable-orbit `TaoCommandError` as a client error (`422`) instead of
+  `ModelUnusable`, once it's verified on the dev cluster.
+- Make the `/config` ranges for inputs like bends reflect what keeps the lattice stable, or
+  document that an in-range value can still be rejected, so clients can bound their inputs.
