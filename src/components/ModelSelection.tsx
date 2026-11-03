@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useModels } from '../hooks/useLumeApi';
 
 const ModelSelection = () => {
@@ -19,7 +20,10 @@ const ModelSelection = () => {
     <ul>
       {models.map((model) => (
         <li key={model.name}>
-          <strong>{model.name}</strong> <span>v{model.version}</span>
+          <Link to="/models/$modelId" params={{ modelId: model.name }}>
+            <strong>{model.name}</strong>
+          </Link>{' '}
+          <span>v{model.version}</span>
           {model.description && <p>{model.description}</p>}
         </li>
       ))}

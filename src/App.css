@@ -1,0 +1,11 @@
+.model-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* TanStack Router's <Link> sets data-status="active" on the current route. */
+.model-nav a[data-status='active'] {
+  font-weight: 600;
+  text-decoration: underline;
+}

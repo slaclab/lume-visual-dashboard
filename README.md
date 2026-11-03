@@ -6,6 +6,7 @@ A React dashboard for visualizing LUME accelerator models.
 
 - **React 19** with **TypeScript**
 - **Vite** for fast dev server and builds
+- **TanStack Router** for file-based, type-safe routing (each model and mode has its own URL)
 - **TanStack Query** for fetching and caching lume-model-api and Canopy (Hare live PV) data, with types generated from their OpenAPI schemas
 - **Carbon Design System** and **ECharts** for UI and plots
 - **Vitest** + **React Testing Library** + **MSW** for unit/integration tests
@@ -62,6 +63,29 @@ pnpm install
 | `pnpm format:check`   | Check formatting without writing                                                                        |
 | `pnpm gen:api`        | Regenerate `src/api/schema.d.ts` from `external/lume-model-api/openapi.json`                            |
 | `pnpm gen:canopy-api` | Regenerate `src/api/canopy/schema.d.ts` from the running compose `canopy` service's Hare OpenAPI schema |
+
+### Routing
+
+Routes are files in `src/routes/` ([TanStack Router file-based routing](https://tanstack.com/router/latest/docs/framework/react/routing/file-based-routing)).
+The Vite plugin regenerates `src/routeTree.gen.ts` whenever `pnpm dev`, `pnpm build` or `pnpm test`
+runs. That file is committed so `tsc` works on a fresh checkout. Don't edit it by hand.
+
+| URL                            | File                                     | Purpose                                     |
+| ------------------------------ | ---------------------------------------- | ------------------------------------------- |
+| `/`                            | `routes/index.tsx`                       | Redirects to `/models`                      |
+| `/models`                      | `routes/models/index.tsx`                | Model list                                  |
+| `/models/:modelId`             | `routes/models/$modelId.tsx`             | Layout for a model: loads config, mode tabs |
+| `/models/:modelId/`            | `routes/models/$modelId/index.tsx`       | Redirects to the interactive mode           |
+| `/models/:modelId/interactive` | `routes/models/$modelId/interactive.tsx` | Interactive mode                            |
+| `/models/:modelId/streaming`   | `routes/models/$modelId/streaming.tsx`   | Streaming mode                              |
+
+To add a mode, create `src/routes/models/$modelId/<mode>.tsx` and add a `<Link>` for it in
+`$modelId.tsx`. Loaders get the `queryClient` from router context (see `src/router.ts`), so they
+prefetch with `queryClient.ensureQueryData(lumeQueries.…)` and components read the same cache
+through the usual hooks. Files or folders starting with `-` in `src/routes/` are not treated as routes.
+
+In development, the TanStack Router devtools (bottom-left) show the matched routes, params and
+loader state, next to the TanStack Query devtools (bottom-right). Neither is included in production builds.
 
 ### LUME model API
 

@@ -13,4 +13,6 @@ build
 .idea
 
 # Generated files
-src/routeTree.gen.ts
+**/routeTree.gen.ts
+
+
