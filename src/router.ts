@@ -14,6 +14,9 @@ export function createAppRouter(
   return createRouter({
     routeTree,
     history,
+    // Mirror Vite's `base` (e.g. `/lume-visual-dashboard/` in Dockerfile.prod) so
+    // routes match and generated links keep the prefix when served under a subpath.
+    basepath: import.meta.env.BASE_URL,
     context: { queryClient },
     // Hovering a link starts loading that route's data.
     defaultPreload: 'intent',
