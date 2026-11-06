@@ -56,3 +56,35 @@ export type EvaluateResponse = Omit<
   input_sources: Record<string, InputSource>;
   outputs: Record<string, Output>;
 };
+
+/** What a live stream evaluates. At least one of `screen` or `outputs` is required. */
+export interface LiveStreamRequest {
+  /** Screen key from the config. Adds that screen's particles and image outputs. */
+  screen?: string | null;
+  outputs?: string[];
+}
+
+/** A decoded event from `GET /api/v1/models/{name}/live/stream`. */
+export type LiveStreamEvent =
+  | { type: 'frame'; frame: EvaluateResponse }
+  /** Sent by the server. Usually temporary: the stream keeps running after it. */
+  | { type: 'error'; message: string };
+
+/**
+ * - `idle`: not subscribed (no model name, nothing requested, or disabled).
+ * - `connecting`: the first connection attempt.
+ * - `open`: connected; frames arrive as fast as the model runs.
+ * - `reconnecting`: the connection dropped or failed and is retried with backoff.
+ * - `closed`: failed for good (e.g. a bad screen, or the live loop limit). See `error`.
+ */
+export type LiveStreamStatus = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed';
+
+export interface LiveStreamState {
+  status: LiveStreamStatus;
+  /** The latest frame. Kept while reconnecting so a UI can keep showing it. */
+  frame: EvaluateResponse | undefined;
+  /** The message of the latest server `error` event. Cleared by the next frame. */
+  errorMessage: string | undefined;
+  /** Why the connection failed: the last failure while `reconnecting`, the fatal one when `closed`. */
+  error: Error | undefined;
+}

@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { fetchJson, getBaseUrl, LumeApiError } from './client';
+import { fetchJson, getBaseUrl, LumeApiError, parseRetryAfter } from './client';
 import { server, TEST_BASE_URL } from '../test/server';
 
 describe('fetchJson', () => {
@@ -55,5 +55,32 @@ describe('fetchJson', () => {
     const error = (await fetchJson('/busy').catch((e: unknown) => e)) as LumeApiError;
     expect(error.body).toBe('Service busy');
     expect(error.isClientError).toBe(false);
+    expect(error.hasDetail).toBe(false);
+    expect(error.retryAfterMs).toBeUndefined();
+  });
+
+  it('reads Retry-After in seconds', async () => {
+    server.use(
+      http.post(`${TEST_BASE_URL}/full`, () =>
+        HttpResponse.json(
+          { detail: 'pool saturated' },
+          { status: 503, headers: { 'Retry-After': '2' } }
+        )
+      )
+    );
+    const error = (await fetchJson('/full', { method: 'POST', body: {} }).catch(
+      (e: unknown) => e
+    )) as LumeApiError;
+    expect(error.retryAfterMs).toBe(2000);
+    expect(error.hasDetail).toBe(true);
+  });
+});
+
+describe('parseRetryAfter', () => {
+  it('accepts delay seconds and HTTP dates', () => {
+    expect(parseRetryAfter('30')).toBe(30_000);
+    expect(parseRetryAfter(new Date(Date.now() - 1000).toUTCString())).toBe(0);
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter('soon')).toBeUndefined();
   });
 });

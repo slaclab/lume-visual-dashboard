@@ -9,7 +9,7 @@ import type {
   SnapshotResponse,
 } from './types';
 
-const modelPath = (name: string) => `/api/v1/models/${encodeURIComponent(name)}`;
+export const modelPath = (name: string) => `/api/v1/models/${encodeURIComponent(name)}`;
 
 export function getModels(signal?: AbortSignal): Promise<ModelListEntry[]> {
   return fetchJson('/api/v1/models', { signal });

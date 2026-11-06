@@ -22,9 +22,11 @@ services:
 
   # lume-model-api with the real cu_hxr_staged model, built from the upstream Dockerfile
   # (conda, Bmad, torch, lattices). The image is amd64-only, so on Apple Silicon it builds and
-  # runs under emulation and is slow. Live inputs are synthetic since EPICS is unreachable.
-  #   docker compose --profile full up --build
-  #   http://localhost:8000/docs  (set VITE_LUME_API_BASE_URL=http://localhost:8000 to use it)
+  # runs under emulation and is slow. Rebuild after editing external/lume-model-api.
+  #   http://localhost:8000/docs
+  # It also serves the live SSE stream and machine-snapshot (the cluster runs those on a separate
+  # live pod behind the same base URL). Live inputs are synthetic since EPICS is unreachable.
+  #   curl -N "http://localhost:8000/api/v1/models/cu_hxr_staged/live/stream?screen=OTR3"
   lume-model-api:
     build:
       context: ./external/lume-model-api
@@ -33,6 +35,9 @@ services:
       - "8000:8000"
     environment:
       LUME_MODELS: '{"cu_hxr_staged": {"kwargs": {"n_particles": 1000, "end_element": "OTR3"}}}'
+      # `all` (the default, set here to make it explicit) serves config/evaluate and the live
+      # routes from one process, so local streaming needs no extra service.
+      LUME_ROLE: all
       LUME_LIVE_SOURCE: synthetic
     # Compose never restarts unhealthy containers itself, so the healthcheck stops uvicorn
     # (PID 1) on a 503 and this policy brings it back. Connection errors during startup don't.

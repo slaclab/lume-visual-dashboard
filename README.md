@@ -105,6 +105,53 @@ const { data: config } = useModelConfig(model);
 const { data, isPlaceholderData } = useEvaluate(model, { screen: 'OTR_B', inputs: { Q1: q } });
 ```
 
+#### Live stream (server-sent events)
+
+`GET /api/v1/models/{name}/live/stream` evaluates the model over and over at the machine's
+current inputs and sends each result as a `frame` event. A frame has the same shape as an evaluate
+response, with `input_sources` set to `live`, or to `baseline` for a PV that couldn't be read. It
+isn't a TanStack Query, because the data is pushed:
+
+- `src/api/sse.ts`: `parseEventStream`, a `text/event-stream` parser over a `fetch` body.
+- `src/api/live.ts`:
+  - `openLiveStream` is one connection, as an async iterable of decoded `frame` and `error`
+    events. It uses `fetch` rather than `EventSource`, so a request refused before the stream
+    opens throws a `LumeApiError` with the server's `detail`. That covers a bad screen or output
+    id (400), an unknown model (404), and a deployment that doesn't serve live data or has hit its
+    limit on live loops (503).
+  - `liveStream` is a shared, reconnecting subscription. Subscribers to the same model and
+    output set share one connection, since browsers allow only about 6 per origin. Only the
+    latest frame is kept.
+- `src/hooks/useLiveStream.ts`: `useLiveStream(model, { screen, outputs })`.
+
+```tsx
+const { status, frame, errorMessage, error, reconnect } = useLiveStream(model, {
+  screen: 'OTR3',
+  outputs: ['QUAD:IN20:525:BCTRL'],
+});
+```
+
+`status` is one of these values:
+
+| `status` | Meaning |
+| --- | --- |
+| `idle` | Not connected: no model name, no `screen` or `outputs`, or `{ enabled: false }`. |
+| `connecting` | The first connection attempt. |
+| `open` | Connected. Frames come as fast as the model runs. For `cu_hxr_staged` that's a few seconds apart, with no fixed rate. |
+| `reconnecting` | The connection dropped or failed, and the hook is trying again. `error` holds the cause and `frame` keeps the last frame. |
+| `closed` | Stopped for good, because retrying can't fix the error. `error` says why, and `reconnect()` tries again. |
+
+How the hook handles errors:
+
+- **Errors on the stream.** The server sends an `error` event as `{"message": ...}` and keeps
+  streaming. The hook puts its text in `errorMessage` and clears it with the next frame.
+- **When it reconnects.** It reconnects when the connection drops, when the server ends the
+  stream, and on 5xx responses from a proxy. It waits 1 s, then doubles the wait each time up to
+  30 s, and starts again at 1 s once a frame arrives.
+- **When it stops.** A 4xx, or a 503 with a JSON `detail` from the API itself, closes the stream.
+- **When it disconnects.** It disconnects 0.5 s after the last component using the stream
+  unmounts. The delay means a React StrictMode remount reuses the same connection.
+
 ### Canopy (Hare live PVs)
 
 Live PV data comes from the Hare module of [Canopy](https://github.com/slaclab/canopy). Set
@@ -119,6 +166,54 @@ const { data: meta } = usePvMeta('TEST:SINE'); // units, precision, limits, enum
 const { data: pv } = usePv('TEST:SINE', { refetchInterval: 1000 }); // value, severity, tsNs
 ```
 
+#### Hare stream (WebSocket)
+
+For values that update continuously, use the stream instead of polling `usePv`. Hare sends each
+PV's value and metadata once it connects, then batches changes every 100 ms.
+
+- `src/api/canopy/stream.ts`: `hareStream(pvNames)` is a shared subscription over one WebSocket
+  (`/hare/v1/ws/pvs`).
+  - Each PV is reference counted, so it is subscribed once however many components watch it.
+    PVs requested in the same render go out in one `subscribe` message.
+  - A PV is unsubscribed 0.5 s after its last component unmounts. The socket closes when no PVs
+    are left.
+- `src/hooks/useHare.ts`: `usePvStream(pv)` for one PV, and `useHareStream(pvNames)` for several.
+
+```tsx
+const { status, value, meta, rejected, backend } = usePvStream('TEST:SINE');
+const { pvs } = useHareStream(['TEST:SINE', 'TEST:WF']); // pvs['TEST:WF'].value?.value
+```
+
+`status` takes the same values as `useLiveStream`'s (`idle`, `connecting`, `open`,
+`reconnecting`, `closed`), and both return `reconnect()`.
+
+- **Values and metadata.** `value` is the latest `PVValue` and `meta` is its `PVMeta`. `meta` can
+  arrive after the first value, and a PV that doesn't connect within about 2 s first arrives with
+  `connected: false`.
+- **Rejected names.** `rejected` is set when Hare refuses a PV name. The PV's other fields stay
+  empty and the rest of the list subscribes normally.
+- **Reconnecting.** After a drop the hook reconnects with the same backoff as the lume live stream
+  (1 s, doubling up to 30 s) and re-subscribes every PV. Values are kept in the meantime. Hare sends
+  a heartbeat every 5 s, so 15 s with no message also triggers a reconnect.
+- **API key.** Browsers can't set headers on a WebSocket, so the key goes in the URL as
+  `?api_key=`. They also report a refused key as a plain dropped connection. When a connection
+  fails to open, the hook checks the key with `GET /hare/v1/health/summary`. On a 401 or 403 it
+  sets `status` to `closed` with that `LumeApiError` instead of retrying.
+- **Backend.** `backend` comes from the heartbeat and is `simulation` or `epics`. Use it to warn
+  when the data is simulated.
+
+### Choosing a stream
+
+A model view can use either stream, or both together:
+
+| Need | Use |
+| --- | --- |
+| Model outputs (screens, beam parameters) evaluated at the machine's current inputs | `useLiveStream` (lume-model-api SSE) |
+| Raw machine readbacks or setpoints, e.g. to compare with the model's prediction | `usePvStream` / `useHareStream` (Canopy Hare WebSocket) |
+| A model's inputs as the machine sees them, without evaluating | `useHareStream(config.inputs.map((i) => i.id))`, or `useMachineSnapshot` for a one-off read |
+
+The two run independently: each has its own connection, `status` and `error`.
+
 ## Docker
 
 Run the Vite dev server with hot reloading at `http://localhost:5173`:
@@ -129,7 +224,18 @@ docker compose up
 
 The project directory is bind-mounted into the container, and `node_modules` lives in a Docker volume so it doesn't conflict with your host install. Dependencies are re-synced from the lockfile each time the container starts.
 
-`docker compose up` also starts `lume-model-api` from `external/lume-model-api` at `http://localhost:8000` (Swagger UI at `/docs`). It hosts the lightweight `demo` model with synthetic live inputs, and reloads when you edit `external/lume-model-api/lume_model_api/`. The dashboard calls it at `http://localhost:8000` by default.
+`docker compose up` also starts `lume-model-api` at `http://localhost:8000` (Swagger UI at `/docs`), which the dashboard calls by default:
+
+- **Model.** It hosts the real `cu_hxr_staged` model, tracked to `OTR3` with 1000 particles. The image is built from the upstream `external/lume-model-api/Dockerfile`, which installs conda, Bmad, torch and the lattices.
+- **Platform.** The image is amd64-only, so on Apple Silicon the first build and each model start are slow under emulation. The container isn't healthy until every worker has built the model, which can take a few minutes.
+- **Code changes.** Edits under `external/lume-model-api/` need `docker compose up --build lume-model-api`.
+- **Live stream.** The container serves `live/stream` and `machine-snapshot` from the same port as config and evaluate (`LUME_ROLE=all`), so streaming needs no extra service. On the cluster those two routes run on a separate live pod behind the same base URL. EPICS can't be reached from the container, so the live inputs are synthetic: they oscillate around each input's default.
+
+To watch the raw stream:
+
+```sh
+curl -N "http://localhost:8000/api/v1/models/cu_hxr_staged/live/stream?screen=OTR3"
+```
 
 `docker compose up` also starts Canopy from `external/canopy` at `http://localhost:8050` (Swagger UI at `/docs`). It runs the API only (no Postgres, Redis or worker), which is all Hare needs, and reloads when you edit `external/canopy/src/`. The EPICS backend is simulated, so any PV name returns synthetic data. The name's suffix picks the value kind: `:ENUM`, `:WF`, `:STR`, `:TABLE`, and anything else is a scalar sine wave. Prefix a name with `pva://` to use PV Access. The service accepts one read-only, Hare-only API key, `dev`:
 
@@ -157,12 +263,6 @@ EPICS_CAS_AUTO_BEACON_ADDR_LIST=NO EPICS_CAS_BEACON_ADDR_LIST=127.0.0.1 \
 ```
 
 The `canopy` image is built for `linux/amd64` because PyPI has no Linux arm64 wheels for `p4p`/`pvxslibs`, and the versions built from source don't match ("PVXS ABI mismatch"), so the `epics` backend can't start. On Apple Silicon it runs under emulation.
-
-To run the real `cu_hxr_staged` model as well, built from the upstream Dockerfile (Bmad and torch, amd64 only, so it is slow under emulation on Apple Silicon), serve it at `http://localhost:8001` and set `VITE_LUME_API_BASE_URL=http://localhost:8001` in `.env.local`:
-
-```sh
-docker compose --profile full up --build
-```
 
 `Dockerfile` is for local development only. The production image used by Kubernetes is built from `Dockerfile.prod` (static build served by unprivileged nginx on port 8080, with a health check at `/healthz`).
 
