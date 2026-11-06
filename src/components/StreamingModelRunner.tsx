@@ -57,7 +57,7 @@ const StreamingModelRunner = ({ name, config, source }: StreamingModelRunnerProp
   // Pausing disconnects, and a disconnected stream has no values, so keep the last ones to show.
   const [heldSnapshot, setHeldSnapshot] = useState<ModelStreamSnapshot>();
 
-  const { status, snapshot, errorMessage, error, backend, reconnect } = useModelStream(
+  const { status, snapshot, errorMessage, error, backend, available, reconnect } = useModelStream(
     source,
     name,
     config,
@@ -89,21 +89,31 @@ const StreamingModelRunner = ({ name, config, source }: StreamingModelRunnerProp
             <Tag type={statusTag.type}>{statusTag.label}</Tag>
             {backend ? <Tag type="outline">Backend: {backend}</Tag> : null}
             <span className="stream-toolbar__meta">{updateMeta(shownSnapshot)}</span>
-            <Button
-              kind="tertiary"
-              size="sm"
-              renderIcon={paused ? Play : Pause}
-              onClick={togglePaused}
-            >
-              {paused ? 'Resume' : 'Pause'}
-            </Button>
+            {available ? (
+              <Button
+                kind="tertiary"
+                size="sm"
+                renderIcon={paused ? Play : Pause}
+                onClick={togglePaused}
+              >
+                {paused ? 'Resume' : 'Pause'}
+              </Button>
+            ) : null}
             {status === 'closed' ? (
               <Button kind="primary" size="sm" renderIcon={Renew} onClick={reconnect}>
                 Retry
               </Button>
             ) : null}
           </div>
-          {status === 'closed' ? (
+          {!available ? (
+            <InlineNotification
+              kind="info"
+              title="Canopy is not configured"
+              subtitle="This deployment has no Canopy instance, so live PVs are unavailable."
+              hideCloseButton
+              lowContrast
+            />
+          ) : status === 'closed' ? (
             <InlineNotification
               kind="error"
               title="Live stream closed"
@@ -152,11 +162,13 @@ const StreamingModelRunner = ({ name, config, source }: StreamingModelRunnerProp
       >
         {shownSnapshot ? undefined : (
           <p className="panel__body">
-            {displayStatus === 'closed'
-              ? 'No values received.'
-              : displayStatus === 'paused'
-                ? 'Paused before the first values arrived.'
-                : 'Waiting for the first values…'}
+            {!available
+              ? 'Not available in this deployment.'
+              : displayStatus === 'closed'
+                ? 'No values received.'
+                : displayStatus === 'paused'
+                  ? 'Paused before the first values arrived.'
+                  : 'Waiting for the first values…'}
           </p>
         )}
       </Outputs>

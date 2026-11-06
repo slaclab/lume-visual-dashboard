@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isCanopyConfigured } from '../api/canopy/client';
 import {
   harePvNames,
   snapshotFromHare,
@@ -25,6 +26,8 @@ export interface UseModelStreamResult {
   errorMessage: string | undefined;
   /** canopy only: the EPICS backend from Hare's heartbeat, e.g. `epics` or `simulation`. */
   backend: string | undefined;
+  /** False when this deployment has no Canopy; the source never connects. */
+  available: boolean;
   reconnect: () => void;
 }
 
@@ -51,7 +54,10 @@ export function useModelStream(
     { screen: screen || null, outputs: outputIds },
     { enabled: enabled && source === 'lume' }
   );
-  const hare = useHareStream(pvNames, { enabled: enabled && source === 'canopy' });
+  const canopyAvailable = isCanopyConfigured();
+  const hare = useHareStream(pvNames, {
+    enabled: enabled && source === 'canopy' && canopyAvailable,
+  });
 
   const liveSnapshot = useMemo(
     () => (live.frame ? snapshotFromLiveFrame(live.frame) : undefined),
@@ -73,6 +79,7 @@ export function useModelStream(
       error: live.error,
       errorMessage: live.errorMessage,
       backend: undefined,
+      available: true,
       reconnect: live.reconnect,
     };
   }
@@ -82,6 +89,7 @@ export function useModelStream(
     error: hare.error,
     errorMessage: hare.errorMessage,
     backend: hare.backend,
+    available: canopyAvailable,
     reconnect: hare.reconnect,
   };
 }

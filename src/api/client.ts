@@ -1,7 +1,13 @@
+import { getRuntimeConfig } from '../runtimeConfig';
+
 const DEFAULT_BASE_URL = 'http://localhost:8000';
 
 export function getBaseUrl(): string {
-  return (import.meta.env.VITE_LUME_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
+  return (
+    getRuntimeConfig().lumeApiBaseUrl ||
+    import.meta.env.VITE_LUME_API_BASE_URL ||
+    DEFAULT_BASE_URL
+  ).replace(/\/+$/, '');
 }
 
 export class LumeApiError extends Error {

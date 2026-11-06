@@ -61,9 +61,17 @@ spec:
             # nginx writes its pid file and temp buffers to /tmp
             - name: tmp
               mountPath: /tmp
+            # Per-environment API URLs, read by the app before it starts
+            - name: config
+              mountPath: /usr/share/nginx/html/config.js
+              subPath: config.js
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config
+          configMap:
+            name: dashboard-config
 ---
 apiVersion: v1
 kind: Service

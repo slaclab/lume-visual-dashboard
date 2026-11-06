@@ -1,14 +1,24 @@
+import { getRuntimeConfig } from '../../runtimeConfig';
 import { fetchJson, type RequestOptions } from '../client';
 
 const DEFAULT_BASE_URL = 'http://localhost:8050';
 const DEFAULT_API_KEY = 'dev';
 
+/** False when the deployment's runtime config sets `canopyApiBaseUrl: null`. */
+export function isCanopyConfigured(): boolean {
+  return getRuntimeConfig().canopyApiBaseUrl !== null;
+}
+
 export function getCanopyBaseUrl(): string {
-  return (import.meta.env.VITE_CANOPY_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
+  return (
+    getRuntimeConfig().canopyApiBaseUrl ||
+    import.meta.env.VITE_CANOPY_API_BASE_URL ||
+    DEFAULT_BASE_URL
+  ).replace(/\/+$/, '');
 }
 
 export function getCanopyApiKey(): string {
-  return import.meta.env.VITE_CANOPY_API_KEY || DEFAULT_API_KEY;
+  return getRuntimeConfig().canopyApiKey || import.meta.env.VITE_CANOPY_API_KEY || DEFAULT_API_KEY;
 }
 
 /** `fetchJson` against Canopy, authenticated with `X-API-Key`. Errors are `LumeApiError`s. */

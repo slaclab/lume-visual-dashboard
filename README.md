@@ -283,9 +283,9 @@ docker run --rm -p 8080:8080 lume-visual-dashboard
 
 Manifests live in `deploy/kubernetes` and are managed with Kustomize:
 
-- `base/`: Namespace, Deployment, Service, and Ingress serving the app at `/lume-visual-dashboard`
-- `overlays/staging/`: staging on the dev cluster. Swaps the ingress host to the dev domain and pins the image tag built from the `staging` branch.
-- `overlays/prod/`: prod cluster. Pins the image tag built from `main`.
+- `base/`: Namespace, Deployment, Service, Ingress serving the app at `/lume-visual-dashboard`, and the `dashboard-config` ConfigMap
+- `overlays/staging/`: staging on the dev cluster. Swaps the ingress host to the dev domain, sets the staging API URLs in `config.js`, and pins the image tag built from the `staging` branch.
+- `overlays/prod/`: prod cluster. Sets the prod API URLs in `config.js` and pins the image tag built from `main`.
 
 | Environment | Branch    | Overlay            | URL                                                                       |
 | ----------- | --------- | ------------------ | ------------------------------------------------------------------------- |
@@ -293,6 +293,20 @@ Manifests live in `deploy/kubernetes` and are managed with Kustomize:
 | Prod        | `main`    | `overlays/prod`    | `https://ard-modeling-service.slac.stanford.edu/lume-visual-dashboard/`   |
 
 Both hosts are reachable from the SLAC network only (see the ingress allowlist in `base/ingress.yaml`).
+
+### API URLs per environment
+
+The image doesn't bake in API URLs. Each overlay's `config.js` becomes the `dashboard-config` ConfigMap, which is mounted over the image's `/config.js`. `index.html` loads it before the app starts. To point an environment at a different API, edit its `config.js` and push. Changes under `deploy/` don't trigger an image build, and the content-hashed ConfigMap name rolls the pod.
+
+| Key                | Staging                                                           | Prod                                                                               |
+| ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `lumeApiBaseUrl`   | `https://ad-accel-online-ml-dev.slac.stanford.edu/lume-model-api` | `https://ard-modeling-service.slac.stanford.edu/lume-model-api` (not deployed yet) |
+| `canopyApiBaseUrl` | `null` (no Canopy in the cluster)                                 | `null` (no Canopy in the cluster)                                                  |
+| `canopyApiKey`     | unset                                                             | unset                                                                              |
+
+`canopyApiBaseUrl: null` turns the Canopy page off: it says Canopy isn't configured instead of connecting. Once Canopy is deployed, set its URL and a read-only `canopyApiKey`. The key is sent to the browser, so a ConfigMap is as private as it gets.
+
+Unset keys fall back to the `VITE_*` build-time variables, then to the local docker compose defaults. Locally, `public/config.js` is empty, so `.env.local` still applies.
 
 Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow. It runs on every push to `main` or `staging`, except pushes that only change `deploy/`, `docs/`, or Markdown. Each build is tagged with the 7-character commit SHA, and the workflow commits that tag to the matching overlay (`main` → `overlays/prod`, `staging` → `overlays/staging`) on the same branch. Argo CD (configured in [slaclab/ad-argocd-apps](https://github.com/slaclab/ad-argocd-apps)) syncs each overlay from git automatically, so pushing to a branch is a deploy.
 

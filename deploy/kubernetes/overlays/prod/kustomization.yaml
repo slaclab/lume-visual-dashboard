@@ -4,6 +4,13 @@ kind: Kustomization
 resources:
   - ../../base
 
+# API URLs for this environment; see config.js.
+configMapGenerator:
+  - name: dashboard-config
+    behavior: replace
+    files:
+      - config.js
+
 labels:
   - pairs:
       environment: prod

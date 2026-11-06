@@ -64,6 +64,7 @@ beforeEach(() => {
 afterEach(() => {
   closeAllLiveStreams();
   closeAllHareStreams();
+  delete window.__LUME_DASHBOARD_CONFIG__;
   Object.assign(liveStreamTiming, defaultTiming);
   Object.assign(hareStreamTiming, defaultHareTiming);
 });
@@ -200,6 +201,16 @@ describe('StreamingModelRunner (Canopy Hare)', () => {
 
     sendHare(clients[0], { type: 'heartbeat', timestamp: 1, backend: 'simulation' });
     await screen.findByText('Backend: simulation');
+  });
+
+  it('does not connect when the deployment has no Canopy', async () => {
+    // Any socket would fail the test: MSW errors on unhandled requests.
+    window.__LUME_DASHBOARD_CONFIG__ = { canopyApiBaseUrl: null };
+    render(<StreamingModelRunner name="demo" config={config} source="canopy" />);
+    expect(screen.getByText('Canopy is not configured')).toBeTruthy();
+    expect(screen.getByText('Idle')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 30));
   });
 
   it('shows rejected PVs without a value', async () => {
