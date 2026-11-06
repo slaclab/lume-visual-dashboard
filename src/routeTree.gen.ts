@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModelsIndexRouteImport } from './routes/models/index'
 import { Route as ModelsModelIdRouteImport } from './routes/models/$modelId'
 import { Route as ModelsModelIdIndexRouteImport } from './routes/models/$modelId/index'
+import { Route as ModelsModelIdCanopyRouteImport } from './routes/models/$modelId/canopy'
 import { Route as ModelsModelIdInteractiveRouteImport } from './routes/models/$modelId/interactive'
 import { Route as ModelsModelIdStreamingRouteImport } from './routes/models/$modelId/streaming'
 
@@ -36,6 +37,11 @@ const ModelsModelIdIndexRoute = ModelsModelIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ModelsModelIdRoute,
 } as any)
+const ModelsModelIdCanopyRoute = ModelsModelIdCanopyRouteImport.update({
+  id: '/canopy',
+  path: '/canopy',
+  getParentRoute: () => ModelsModelIdRoute,
+} as any)
 const ModelsModelIdInteractiveRoute =
   ModelsModelIdInteractiveRouteImport.update({
     id: '/interactive',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/models/$modelId': typeof ModelsModelIdRouteWithChildren
   '/models/': typeof ModelsIndexRoute
+  '/models/$modelId/canopy': typeof ModelsModelIdCanopyRoute
   '/models/$modelId/interactive': typeof ModelsModelIdInteractiveRoute
   '/models/$modelId/streaming': typeof ModelsModelIdStreamingRoute
   '/models/$modelId/': typeof ModelsModelIdIndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/models': typeof ModelsIndexRoute
+  '/models/$modelId/canopy': typeof ModelsModelIdCanopyRoute
   '/models/$modelId/interactive': typeof ModelsModelIdInteractiveRoute
   '/models/$modelId/streaming': typeof ModelsModelIdStreamingRoute
   '/models/$modelId': typeof ModelsModelIdIndexRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/models/$modelId': typeof ModelsModelIdRouteWithChildren
   '/models/': typeof ModelsIndexRoute
+  '/models/$modelId/canopy': typeof ModelsModelIdCanopyRoute
   '/models/$modelId/interactive': typeof ModelsModelIdInteractiveRoute
   '/models/$modelId/streaming': typeof ModelsModelIdStreamingRoute
   '/models/$modelId/': typeof ModelsModelIdIndexRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/models/$modelId'
     | '/models/'
+    | '/models/$modelId/canopy'
     | '/models/$modelId/interactive'
     | '/models/$modelId/streaming'
     | '/models/$modelId/'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/models'
+    | '/models/$modelId/canopy'
     | '/models/$modelId/interactive'
     | '/models/$modelId/streaming'
     | '/models/$modelId'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/models/$modelId'
     | '/models/'
+    | '/models/$modelId/canopy'
     | '/models/$modelId/interactive'
     | '/models/$modelId/streaming'
     | '/models/$modelId/'
@@ -134,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModelsModelIdIndexRouteImport
       parentRoute: typeof ModelsModelIdRoute
     }
+    '/models/$modelId/canopy': {
+      id: '/models/$modelId/canopy'
+      path: '/canopy'
+      fullPath: '/models/$modelId/canopy'
+      preLoaderRoute: typeof ModelsModelIdCanopyRouteImport
+      parentRoute: typeof ModelsModelIdRoute
+    }
     '/models/$modelId/interactive': {
       id: '/models/$modelId/interactive'
       path: '/interactive'
@@ -152,12 +171,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface ModelsModelIdRouteChildren {
+  ModelsModelIdCanopyRoute: typeof ModelsModelIdCanopyRoute
   ModelsModelIdInteractiveRoute: typeof ModelsModelIdInteractiveRoute
   ModelsModelIdStreamingRoute: typeof ModelsModelIdStreamingRoute
   ModelsModelIdIndexRoute: typeof ModelsModelIdIndexRoute
 }
 
 const ModelsModelIdRouteChildren: ModelsModelIdRouteChildren = {
+  ModelsModelIdCanopyRoute: ModelsModelIdCanopyRoute,
   ModelsModelIdInteractiveRoute: ModelsModelIdInteractiveRoute,
   ModelsModelIdStreamingRoute: ModelsModelIdStreamingRoute,
   ModelsModelIdIndexRoute: ModelsModelIdIndexRoute,

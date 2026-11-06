@@ -57,9 +57,18 @@ describe('routes', () => {
     server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
     renderAt('/models/demo/streaming');
     // The demo config has no outputs or screens, so the stream stays idle and makes no request.
-    await screen.findByRole('heading', { name: 'Live stream' });
+    await screen.findByRole('heading', { name: 'Live stream (lume-model-api)' });
     expect(screen.getByText('Idle')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Streaming' }).dataset.status).toBe('active');
+  });
+
+  it('renders Canopy mode at its own URL', async () => {
+    server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
+    renderAt('/models/demo/canopy');
+    // The demo config has no inputs or outputs, so no PVs are subscribed.
+    await screen.findByRole('heading', { name: 'Live PVs (Canopy Hare)' });
+    expect(screen.getByText('Idle')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Canopy' }).dataset.status).toBe('active');
   });
 
   it('shows not found for an unknown model', async () => {

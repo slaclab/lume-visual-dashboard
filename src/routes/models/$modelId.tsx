@@ -30,6 +30,9 @@ function ModelLayout() {
         <Link to="/models/$modelId/streaming" params={{ modelId }}>
           Streaming
         </Link>
+        <Link to="/models/$modelId/canopy" params={{ modelId }}>
+          Canopy
+        </Link>
       </nav>
       <Outlet />
     </div>

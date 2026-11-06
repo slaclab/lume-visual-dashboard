@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pause, Play, Renew } from '@carbon/icons-react';
 import { Button, InlineNotification, Select, SelectItem, Stack, Tag } from '@carbon/react';
 
-import type { ConfigResponse, EvaluateResponse, LiveStreamStatus } from '../api/types';
-import { useLiveStream } from '../hooks/useLiveStream';
+import type { ModelStreamSnapshot, ModelStreamSource } from '../api/modelStream';
+import type { ConfigResponse, LiveStreamStatus } from '../api/types';
+import { useModelStream } from '../hooks/useModelStream';
 import LiveInputs from './LiveInputs';
 import ModelSummary from './ModelSummary';
 import Outputs from './Outputs';
@@ -12,6 +13,7 @@ import Panel from './Panel';
 type StreamingModelRunnerProps = {
   name?: string;
   config: ConfigResponse;
+  source: ModelStreamSource;
 };
 
 type DisplayStatus = LiveStreamStatus | 'paused';
@@ -25,54 +27,68 @@ const STATUS_TAG = {
   paused: { label: 'Paused', type: 'cool-gray' },
 } as const satisfies Record<DisplayStatus, { label: string; type: string }>;
 
-const frameMeta = (frame: EvaluateResponse | undefined) =>
-  frame
-    ? `Frame #${frame.frame_index} · updated ${new Date(frame.timestamp * 1000).toLocaleTimeString()}`
-    : 'No frames yet';
+const SOURCE_PANEL = {
+  lume: {
+    title: 'Live stream (lume-model-api)',
+    description: "Model evaluated at the machine's current inputs",
+  },
+  canopy: {
+    title: 'Live PVs (Canopy Hare)',
+    description: 'Measured input and output PVs; outputs that are not PVs have no value',
+  },
+} as const satisfies Record<ModelStreamSource, { title: string; description: string }>;
 
-const StreamingModelRunner = ({ name, config }: StreamingModelRunnerProps) => {
-  const { inputs, outputs, screens } = config;
+const updateMeta = (snapshot: ModelStreamSnapshot | undefined) => {
+  if (!snapshot) return 'No values yet';
+  const parts = [];
+  if (snapshot.frameIndex !== undefined) parts.push(`Frame #${snapshot.frameIndex}`);
+  if (snapshot.updatedAt !== undefined) {
+    parts.push(`updated ${new Date(snapshot.updatedAt).toLocaleTimeString()}`);
+  }
+  const text = parts.join(' · ') || 'Waiting for values';
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+const StreamingModelRunner = ({ name, config, source }: StreamingModelRunnerProps) => {
+  const { inputs, screens } = config;
 
   const [selectedScreen, setSelectedScreen] = useState(screens[0]?.key ?? '');
   const [paused, setPaused] = useState(false);
-  // Pausing disconnects, and a disconnected stream has no frame, so keep the last one to show.
-  const [heldFrame, setHeldFrame] = useState<EvaluateResponse>();
+  // Pausing disconnects, and a disconnected stream has no values, so keep the last ones to show.
+  const [heldSnapshot, setHeldSnapshot] = useState<ModelStreamSnapshot>();
 
-  // Arrays/particles are large, and some arrays (e.g. `name`) hold strings the server can't encode.
-  const outputIds = useMemo(
-    () => outputs.filter((output) => output.kind === 'scalar').map((output) => output.id),
-    [outputs]
-  );
-
-  const { status, frame, errorMessage, error, reconnect } = useLiveStream(
+  const { status, snapshot, errorMessage, error, backend, reconnect } = useModelStream(
+    source,
     name,
-    { screen: selectedScreen || null, outputs: outputIds },
-    { enabled: !paused }
+    config,
+    { screen: selectedScreen, enabled: !paused }
   );
 
-  const shownFrame = frame ?? heldFrame;
+  const shownSnapshot = snapshot ?? heldSnapshot;
   const displayStatus: DisplayStatus = paused ? 'paused' : status;
   const statusTag = STATUS_TAG[displayStatus];
+  const panel = SOURCE_PANEL[source];
 
   const togglePaused = () => {
-    if (!paused) setHeldFrame(shownFrame);
+    if (!paused) setHeldSnapshot(shownSnapshot);
     setPaused(!paused);
   };
 
   const changeScreen = (screen: string) => {
     setSelectedScreen(screen);
-    // The held frame belongs to the previous screen's stream.
-    setHeldFrame(undefined);
+    // The held values belong to the previous screen's stream.
+    setHeldSnapshot(undefined);
   };
 
   return (
     <Stack gap={7}>
       <ModelSummary config={config} />
-      <Panel title="Live stream" description="Evaluated at the machine's current inputs">
+      <Panel title={panel.title} description={panel.description}>
         <Stack gap={6}>
           <div className="stream-toolbar">
             <Tag type={statusTag.type}>{statusTag.label}</Tag>
-            <span className="stream-toolbar__meta">{frameMeta(shownFrame)}</span>
+            {backend ? <Tag type="outline">Backend: {backend}</Tag> : null}
+            <span className="stream-toolbar__meta">{updateMeta(shownSnapshot)}</span>
             <Button
               kind="tertiary"
               size="sm"
@@ -112,7 +128,8 @@ const StreamingModelRunner = ({ name, config }: StreamingModelRunnerProps) => {
               lowContrast
             />
           ) : null}
-          {screens.length > 0 ? (
+          {/* Screens are model-evaluated particles and images, which Hare can't provide. */}
+          {source === 'lume' && screens.length > 0 ? (
             <Select
               id="stream-screen-select"
               labelText="Screen"
@@ -126,18 +143,20 @@ const StreamingModelRunner = ({ name, config }: StreamingModelRunnerProps) => {
           ) : null}
         </Stack>
       </Panel>
-      <LiveInputs inputs={inputs} frame={shownFrame} />
+      <LiveInputs inputs={inputs} snapshot={shownSnapshot} />
       <Outputs
-        outputs={shownFrame?.outputs}
-        description={shownFrame ? `${Object.keys(shownFrame.outputs).length} total` : undefined}
+        outputs={shownSnapshot?.outputs}
+        description={
+          shownSnapshot ? `${Object.keys(shownSnapshot.outputs).length} total` : undefined
+        }
       >
-        {shownFrame ? undefined : (
+        {shownSnapshot ? undefined : (
           <p className="panel__body">
             {displayStatus === 'closed'
-              ? 'No frames received.'
+              ? 'No values received.'
               : displayStatus === 'paused'
-                ? 'Paused before the first frame.'
-                : 'Waiting for the first frame…'}
+                ? 'Paused before the first values arrived.'
+                : 'Waiting for the first values…'}
           </p>
         )}
       </Outputs>

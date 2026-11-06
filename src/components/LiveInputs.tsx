@@ -9,12 +9,13 @@ import {
   Tag,
 } from '@carbon/react';
 
-import type { EvaluateResponse, InputInfo, InputSource } from '../api/types';
+import type { InputValueSource, ModelStreamSnapshot } from '../api/modelStream';
+import type { InputInfo } from '../api/types';
 
 type LiveInputsProps = {
   inputs: InputInfo[];
-  /** The latest frame; undefined before the first one arrives. */
-  frame: EvaluateResponse | undefined;
+  /** The latest values; undefined before the first ones arrive. */
+  snapshot: ModelStreamSnapshot | undefined;
 };
 
 const EMPTY = '—';
@@ -24,9 +25,11 @@ const SOURCE_TAG_TYPE = {
   live: 'green',
   request: 'blue',
   baseline: 'gray',
-} as const satisfies Record<InputSource, string>;
+  disconnected: 'red',
+  rejected: 'magenta',
+} as const satisfies Record<InputValueSource, string>;
 
-const LiveInputs = ({ inputs, frame }: LiveInputsProps) => (
+const LiveInputs = ({ inputs, snapshot }: LiveInputsProps) => (
   // minWidth 0 lets the table scroll inside the container instead of widening the Stack grid.
   <TableContainer title={TITLE} description={`${inputs.length} total`} style={{ minWidth: 0 }}>
     {inputs.length === 0 ? (
@@ -43,11 +46,11 @@ const LiveInputs = ({ inputs, frame }: LiveInputsProps) => (
         </TableHead>
         <TableBody>
           {inputs.map(({ id, unit }) => {
-            const source = frame?.input_sources[id];
+            const source = snapshot?.inputSources[id];
             return (
               <TableRow key={id}>
                 <TableCell>{id}</TableCell>
-                <TableCell>{frame?.inputs[id] ?? EMPTY}</TableCell>
+                <TableCell>{snapshot?.inputs[id] ?? EMPTY}</TableCell>
                 <TableCell>{unit || EMPTY}</TableCell>
                 <TableCell>
                   {source ? (
