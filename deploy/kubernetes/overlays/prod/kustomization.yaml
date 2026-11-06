@@ -12,4 +12,4 @@ labels:
 # The update-image workflow sets newTag to the 7-char commit SHA on each build from main.
 images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
-    newTag: "a9300eb"
+    newTag: "57e0e3f"
