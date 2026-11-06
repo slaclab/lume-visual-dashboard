@@ -1,50 +1,73 @@
+import type { ReactNode } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@carbon/react';
+
 import type { EvaluateResponse, Output } from '../api/types';
 
 type OutputsProps = {
-  outputs: EvaluateResponse['outputs'];
+  outputs: EvaluateResponse['outputs'] | undefined;
+  /** Shown under the title, e.g. a loading indicator or the output count. */
+  description?: ReactNode;
+  /** Shown in place of the table, e.g. an error or loading message. */
+  children?: ReactNode;
 };
 
-const OutputValue = ({ output }: { output: Output }) => {
+const EMPTY = '—';
+
+const outputValue = (output: Output): ReactNode => {
   switch (output.kind) {
     case 'scalar':
-      return (
-        <span>
-          {output.value ?? '—'}
-          {output.unit ? ` ${output.unit}` : ''}
-        </span>
-      );
+      return output.value ?? EMPTY;
     case 'array':
-      return (
-        <span>
-          array [{output.shape.join(' × ')}] {output.dtype}
-          {output.unit ? ` (${output.unit})` : ''}
-        </span>
-      );
+      return `[${output.shape.join(' × ')}] ${output.dtype}`;
     case 'particles':
-      return <span>{output.n} particles</span>;
+      return `${output.n} particles`;
     case 'value':
-      return <span>{JSON.stringify(output.value)}</span>;
+      return JSON.stringify(output.value);
   }
 };
 
-const Outputs = ({ outputs }: OutputsProps) => {
-  const entries = Object.entries(outputs);
+const outputUnit = (output: Output) => ('unit' in output && output.unit ? output.unit : EMPTY);
 
-  if (entries.length === 0) {
-    return <div>No outputs.</div>;
-  }
+const Outputs = ({ outputs, description, children }: OutputsProps) => {
+  const entries = outputs ? Object.entries(outputs) : [];
 
   return (
-    <dl>
-      {entries.map(([id, output]) => (
-        <div key={id}>
-          <dt>{id}</dt>
-          <dd>
-            <OutputValue output={output} />
-          </dd>
-        </div>
-      ))}
-    </dl>
+    // minWidth 0 lets the table scroll inside the container instead of widening the Stack grid.
+    <TableContainer title="Outputs" description={description} style={{ minWidth: 0 }}>
+      {children ??
+        (entries.length === 0 ? (
+          <p className="panel__body">No outputs.</p>
+        ) : (
+          <Table size="sm" useZebraStyles aria-label="Outputs">
+            <TableHead>
+              <TableRow>
+                <TableHeader>ID</TableHeader>
+                <TableHeader>Kind</TableHeader>
+                <TableHeader>Value</TableHeader>
+                <TableHeader>Unit</TableHeader>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {entries.map(([id, output]) => (
+                <TableRow key={id}>
+                  <TableCell>{id}</TableCell>
+                  <TableCell>{output.kind}</TableCell>
+                  <TableCell>{outputValue(output)}</TableCell>
+                  <TableCell>{outputUnit(output)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ))}
+    </TableContainer>
   );
 };
 

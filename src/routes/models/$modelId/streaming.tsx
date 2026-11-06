@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import Streaming from '../../../components/StreamingPage';
 
 export const Route = createFileRoute('/models/$modelId/streaming')({
   component: StreamingMode,
@@ -6,5 +7,5 @@ export const Route = createFileRoute('/models/$modelId/streaming')({
 
 function StreamingMode() {
   const { modelId } = Route.useParams();
-  return <p>Streaming mode for {modelId} is not implemented yet.</p>;
+  return <Streaming name={modelId} />;
 }

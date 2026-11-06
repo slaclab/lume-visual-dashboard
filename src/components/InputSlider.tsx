@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useRef } from 'react';
+import type { FocusEvent, KeyboardEvent } from 'react';
+import { Slider } from '@carbon/react';
 
 import type { InputInfo } from '../api/types';
 
@@ -10,43 +12,50 @@ type InputSliderProps = {
   disabled?: boolean;
 };
 
+const COMMIT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter']);
+
+const formatBound = (bound: number, unit: string) =>
+  `${Number(bound.toPrecision(4))}${unit ? ` ${unit}` : ''}`;
+
 export const InputSlider = ({ input, value, onCommit, disabled }: InputSliderProps) => {
   const { id, min, max, unit, constant } = input;
   // Divide the range into 100 steps; fall back to 1 when min === max.
   const step = (max - min) / 100 || 1;
 
-  // Value while dragging; null when not dragging, so the committed `value` prop is shown.
-  const [draft, setDraft] = useState<number | null>(null);
-  const shown = draft ?? value;
+  // Latest value from the slider; committed on release, arrow/Enter keyup, or blur.
+  const draft = useRef<number | null>(null);
 
-  const commit = () => {
-    if (draft === null) return;
-    if (draft !== value) onCommit(draft);
-    setDraft(null);
+  const commit = (next = draft.current) => {
+    draft.current = null;
+    if (next !== null && next !== value) onCommit(next);
+  };
+
+  // Carbon only fires `onRelease` for pointer drags, so keyboard and text entry commit here.
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (COMMIT_KEYS.has(e.key)) commit();
+  };
+  const handleBlur = (e: FocusEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) commit();
   };
 
   return (
-    <label>
-      <span>
-        {id}
-        {/* {unit ? ` (${unit})` : ''} */}
-      </span>
-      <input
-        type="range"
+    <div onKeyUp={handleKeyUp} onBlur={handleBlur}>
+      <Slider
+        id={`input-${id}`}
+        labelText={unit ? `${id} (${unit})` : id}
         min={min}
         max={max}
         step={step}
-        value={shown}
+        value={value}
+        formatLabel={(bound) => formatBound(bound, unit)}
         disabled={constant || disabled}
-        onChange={(e) => setDraft(Number(e.target.value))}
-        onPointerUp={commit}
-        onKeyUp={commit}
-        onBlur={commit}
+        onChange={({ value: next }) => {
+          if (typeof next === 'number' && Number.isFinite(next)) draft.current = next;
+        }}
+        onRelease={({ value: next }) => {
+          if (typeof next === 'number' && Number.isFinite(next)) commit(next);
+        }}
       />
-      <output>
-        {shown}
-        {unit ? ` ${unit}` : ''}
-      </output>
-    </label>
+    </div>
   );
 };

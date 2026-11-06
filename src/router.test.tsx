@@ -45,18 +45,21 @@ describe('routes', () => {
     expect(link.getAttribute('href')).toBe('/models/demo');
   });
 
-  it('opens interactive mode by default for a model', async () => {
+  it('shows the model config at the model URL', async () => {
     server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
     const router = renderAt('/models/demo');
-    await screen.findByRole('heading', { name: 'demo' });
-    expect(router.state.location.pathname).toBe('/models/demo/interactive');
-    expect(screen.getByRole('link', { name: 'Interactive' }).dataset.status).toBe('active');
+    await screen.findByText('Demo model');
+    expect(router.state.location.pathname).toBe('/models/demo');
+    expect(screen.getByRole('heading', { name: 'Inputs' })).toBeTruthy();
   });
 
   it('renders streaming mode at its own URL', async () => {
     server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
     renderAt('/models/demo/streaming');
-    await screen.findByText(/Streaming mode for demo/);
+    // The demo config has no outputs or screens, so the stream stays idle and makes no request.
+    await screen.findByRole('heading', { name: 'Live stream' });
+    expect(screen.getByText('Idle')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Streaming' }).dataset.status).toBe('active');
   });
 
   it('shows not found for an unknown model', async () => {

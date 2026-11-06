@@ -1,11 +1,11 @@
 import { useModelConfig } from '../hooks/useLumeApi';
-import ModelRunner from './ModelRunner';
+import ModelPageRunner from './ModelPageRunner';
 
-type ModelConfigProps = {
+type ModelPageProps = {
   name?: string;
 };
 
-const ModelConfig = ({ name }: ModelConfigProps) => {
+const ModelPage = ({ name }: ModelPageProps) => {
   const { data: modelConfig, isPending, isError, error } = useModelConfig(name);
 
   if (isPending) {
@@ -16,8 +16,7 @@ const ModelConfig = ({ name }: ModelConfigProps) => {
     return <div role="alert">Failed to load model configuration: {error.message}</div>;
   }
 
-  // Keyed so input values reset when navigating to a different model.
-  return <ModelRunner key={name} name={name} config={modelConfig} />;
+  return <ModelPageRunner config={modelConfig} />;
 };
 
-export default ModelConfig;
+export default ModelPage;

@@ -11,7 +11,7 @@ type InputsProps = {
 
 const Inputs = ({ inputs, values, onChange, disabled }: InputsProps) => {
   return (
-    <div>
+    <div className="input-grid">
       {inputs.map((input) => (
         <InputSlider
           key={input.id}
