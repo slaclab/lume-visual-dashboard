@@ -35,13 +35,13 @@ const LiveInputs = ({ inputs, snapshot }: LiveInputsProps) => (
     {inputs.length === 0 ? (
       <p className="panel__body">No inputs.</p>
     ) : (
-      <Table size="sm" useZebraStyles aria-label={TITLE}>
+      <Table size="sm" useZebraStyles aria-label={TITLE} className="fixed-columns">
         <TableHead>
           <TableRow>
-            <TableHeader>ID</TableHeader>
-            <TableHeader>Value</TableHeader>
-            <TableHeader>Unit</TableHeader>
-            <TableHeader>Source</TableHeader>
+            <TableHeader className="col-id">ID</TableHeader>
+            <TableHeader className="col-value">Value</TableHeader>
+            <TableHeader className="col-unit">Unit</TableHeader>
+            <TableHeader className="col-source">Source</TableHeader>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -50,7 +50,7 @@ const LiveInputs = ({ inputs, snapshot }: LiveInputsProps) => (
             return (
               <TableRow key={id}>
                 <TableCell>{id}</TableCell>
-                <TableCell>{snapshot?.inputs[id] ?? EMPTY}</TableCell>
+                <TableCell className="numeric">{snapshot?.inputs[id] ?? EMPTY}</TableCell>
                 <TableCell>{unit || EMPTY}</TableCell>
                 <TableCell>
                   {source ? (

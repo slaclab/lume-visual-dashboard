@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { closeAllHareStreams, hareStreamTiming } from '../api/canopy/stream';
 import type { HareClientMessage, PVValue } from '../api/canopy/types';
 import { closeAllLiveStreams, liveStreamTiming } from '../api/live';
+import { modelStreamTiming } from '../hooks/useModelStream';
 import type { ConfigResponse } from '../api/types';
 import { server, TEST_BASE_URL } from '../test/server';
 import { createSseStream, liveFrame } from '../test/utils';
@@ -52,7 +53,10 @@ function rowText(table: string, id: string) {
 
 const defaultTiming = { ...liveStreamTiming };
 const defaultHareTiming = { ...hareStreamTiming };
+const defaultDisplayTiming = { ...modelStreamTiming };
 beforeEach(() => {
+  // The pages show at most one update per second; keep the throttle but make it fast.
+  Object.assign(modelStreamTiming, { displayIntervalMs: 10 });
   Object.assign(liveStreamTiming, { initialRetryMs: 10, maxRetryMs: 40, teardownMs: 20 });
   Object.assign(hareStreamTiming, {
     initialRetryMs: 10,
@@ -67,6 +71,7 @@ afterEach(() => {
   delete window.__LUME_DASHBOARD_CONFIG__;
   Object.assign(liveStreamTiming, defaultTiming);
   Object.assign(hareStreamTiming, defaultHareTiming);
+  Object.assign(modelStreamTiming, defaultDisplayTiming);
 });
 
 describe('StreamingModelRunner (lume-model-api)', () => {

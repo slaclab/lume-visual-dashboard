@@ -9,18 +9,27 @@ import {
 } from '../api/modelStream';
 import type { ConfigResponse, LiveStreamStatus } from '../api/types';
 import { useHareStream } from './useHare';
+import { useThrottledValue } from './useThrottledValue';
 import { useLiveStream } from './useLiveStream';
+
+/** How often the shown values may change. Tests may shorten it. */
+export const modelStreamTiming = {
+  /** Streams can update many times a second; the page re-renders at most once per interval. */
+  displayIntervalMs: 1000,
+};
 
 export interface UseModelStreamOptions {
   /** lume only: the screen whose particles and image outputs to add. */
   screen?: string;
   /** Set `false` to disconnect. Default `true`. */
   enabled?: boolean;
+  /** Minimum time between snapshot changes. Default `modelStreamTiming.displayIntervalMs`. */
+  intervalMs?: number;
 }
 
 export interface UseModelStreamResult {
   status: LiveStreamStatus;
-  /** The latest values; `undefined` until the first frame (lume) or while idle. */
+  /** The latest values, throttled to `intervalMs`; `undefined` until the first values or while idle. */
   snapshot: ModelStreamSnapshot | undefined;
   error: Error | undefined;
   errorMessage: string | undefined;
@@ -40,7 +49,11 @@ export function useModelStream(
   source: ModelStreamSource,
   name: string | undefined,
   config: ConfigResponse,
-  { screen, enabled = true }: UseModelStreamOptions = {}
+  {
+    screen,
+    enabled = true,
+    intervalMs = modelStreamTiming.displayIntervalMs,
+  }: UseModelStreamOptions = {}
 ): UseModelStreamResult {
   // Arrays/particles are large, and some arrays (e.g. `name`) hold strings the server can't encode.
   const outputIds = useMemo(
@@ -72,10 +85,13 @@ export function useModelStream(
     [config, hare.pvs]
   );
 
+  // Both streams connect regardless; only what's rendered is limited.
+  const snapshot = useThrottledValue(source === 'lume' ? liveSnapshot : hareSnapshot, intervalMs);
+
   if (source === 'lume') {
     return {
       status: live.status,
-      snapshot: liveSnapshot,
+      snapshot,
       error: live.error,
       errorMessage: live.errorMessage,
       backend: undefined,
@@ -85,7 +101,7 @@ export function useModelStream(
   }
   return {
     status: hare.status,
-    snapshot: hareSnapshot,
+    snapshot,
     error: hare.error,
     errorMessage: hare.errorMessage,
     backend: hare.backend,

@@ -81,3 +81,31 @@
   flex: 1 1 auto;
   color: var(--cds-text-secondary);
 }
+
+/* Live values change every update; fixed column widths keep the columns from shifting. */
+.fixed-columns {
+  table-layout: fixed;
+  min-width: 40rem;
+}
+
+.fixed-columns td {
+  overflow-wrap: anywhere;
+}
+
+.fixed-columns .numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.col-id {
+  width: 40%;
+}
+
+.col-value {
+  width: 30%;
+}
+
+.col-kind,
+.col-unit,
+.col-source {
+  width: 15%;
+}

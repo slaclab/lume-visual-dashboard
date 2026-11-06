@@ -46,13 +46,13 @@ const Outputs = ({ outputs, description, children }: OutputsProps) => {
         (entries.length === 0 ? (
           <p className="panel__body">No outputs.</p>
         ) : (
-          <Table size="sm" useZebraStyles aria-label="Outputs">
+          <Table size="sm" useZebraStyles aria-label="Outputs" className="fixed-columns">
             <TableHead>
               <TableRow>
-                <TableHeader>ID</TableHeader>
-                <TableHeader>Kind</TableHeader>
-                <TableHeader>Value</TableHeader>
-                <TableHeader>Unit</TableHeader>
+                <TableHeader className="col-id">ID</TableHeader>
+                <TableHeader className="col-kind">Kind</TableHeader>
+                <TableHeader className="col-value">Value</TableHeader>
+                <TableHeader className="col-unit">Unit</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -60,7 +60,7 @@ const Outputs = ({ outputs, description, children }: OutputsProps) => {
                 <TableRow key={id}>
                   <TableCell>{id}</TableCell>
                   <TableCell>{output.kind}</TableCell>
-                  <TableCell>{outputValue(output)}</TableCell>
+                  <TableCell className="numeric">{outputValue(output)}</TableCell>
                   <TableCell>{outputUnit(output)}</TableCell>
                 </TableRow>
               ))}

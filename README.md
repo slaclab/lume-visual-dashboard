@@ -75,9 +75,10 @@ runs. That file is committed so `tsc` works on a fresh checkout. Don't edit it b
 | `/`                            | `routes/index.tsx`                       | Redirects to `/models`                      |
 | `/models`                      | `routes/models/index.tsx`                | Model list                                  |
 | `/models/:modelId`             | `routes/models/$modelId.tsx`             | Layout for a model: loads config, mode tabs |
-| `/models/:modelId/`            | `routes/models/$modelId/index.tsx`       | Redirects to the interactive mode           |
+| `/models/:modelId/`            | `routes/models/$modelId/index.tsx`       | Model config: inputs, outputs, screens      |
 | `/models/:modelId/interactive` | `routes/models/$modelId/interactive.tsx` | Interactive mode                            |
-| `/models/:modelId/streaming`   | `routes/models/$modelId/streaming.tsx`   | Streaming mode                              |
+| `/models/:modelId/streaming`   | `routes/models/$modelId/streaming.tsx`   | Streaming mode (lume-model-api live stream) |
+| `/models/:modelId/canopy`      | `routes/models/$modelId/canopy.tsx`      | Streaming mode (Canopy Hare PVs)            |
 
 To add a mode, create `src/routes/models/$modelId/<mode>.tsx` and add a `<Link>` for it in
 `$modelId.tsx`. Loaders get the `queryClient` from router context (see `src/router.ts`), so they
@@ -213,6 +214,12 @@ A model view can use either stream, or both together:
 | A model's inputs as the machine sees them, without evaluating | `useHareStream(config.inputs.map((i) => i.id))`, or `useMachineSnapshot` for a one-off read |
 
 The two run independently: each has its own connection, `status` and `error`.
+
+The streaming pages read either source through `useModelStream(source, model, config)`
+(`src/hooks/useModelStream.ts`), which converts both into one snapshot of inputs and outputs. It
+updates that snapshot at most once per second (`modelStreamTiming.displayIntervalMs`, or the
+`intervalMs` option), so the tables don't re-render on every frame. The connection still receives
+every update, and the latest values are shown at the end of each interval.
 
 ## Docker
 
