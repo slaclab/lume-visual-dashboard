@@ -1,8 +1,9 @@
 /**
  * Settings a deployment can change without rebuilding the image. `config.js` (served next to
  * `index.html`, and replaced per environment by a Kubernetes ConfigMap) sets
- * `window.__LUME_DASHBOARD_CONFIG__` before the app loads. Unset keys fall back to the
- * `VITE_*` build-time variables, then to the local docker compose defaults.
+ * `window.__LUME_DASHBOARD_CONFIG__` before the app loads. `canopy-key.js`, loaded next and
+ * replaced per environment by a Kubernetes Secret, adds `canopyApiKey`. Unset keys fall back to
+ * the `VITE_*` build-time variables, then to the local docker compose defaults.
  */
 export interface RuntimeConfig {
   lumeApiBaseUrl?: string;
