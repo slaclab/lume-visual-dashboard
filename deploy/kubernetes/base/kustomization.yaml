@@ -6,9 +6,11 @@ namespace: lume-visual-dashboard
 resources:
   - dashboard.yaml
   - ingress.yaml
+  - canopy.yaml
+  - canopy-ingress.yaml
 
-# Runtime settings (API URLs) mounted over the image's config.js. Overlays replace it.
 configMapGenerator:
+  # Runtime settings (API URLs) mounted over the image's config.js. Overlays replace it.
   - name: dashboard-config
     files:
       - config.js
@@ -16,4 +18,8 @@ configMapGenerator:
 images:
   - name: lume-visual-dashboard-image
     newName: ghcr.io/slaclab/lume-visual-dashboard
+    newTag: latest # Overridden per environment in overlays/
+  # Published by slaclab/canopy's Build Image workflow for each main commit.
+  - name: lume-canopy-image
+    newName: ghcr.io/slaclab/canopy
     newTag: latest # Overridden per environment in overlays/

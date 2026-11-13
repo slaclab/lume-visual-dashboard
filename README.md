@@ -1,351 +1,60 @@
 # LUME Visual Dashboard
 
-A React dashboard for visualizing LUME accelerator models.
+A React dashboard for visualizing [LUME](https://github.com/slaclab/lume-model-api) accelerator models next to live machine data from [Canopy](https://github.com/slaclab/canopy).
 
-## What's included
+**Documentation: <https://slaclab.github.io/lume-visual-dashboard/>**
 
-- **React 19** with **TypeScript**
-- **Vite** for fast dev server and builds
-- **TanStack Router** for file-based, type-safe routing (each model and mode has its own URL)
-- **TanStack Query** for fetching and caching lume-model-api and Canopy (Hare live PV) data, with types generated from their OpenAPI schemas
-- **Carbon Design System** and **ECharts** for UI and plots
-- **Vitest** + **React Testing Library** + **MSW** for unit/integration tests
-- **ESLint** + **Prettier** + **Husky** pre-commit hooks for consistent code style
-- **Zensical** (MkDocs-based) documentation site with GitHub Pages deployment
-- GitHub Actions workflows for lint, type-check, test, docs deployment and image builds
-- Docker Compose for local development and Kustomize manifests for staging and prod
+The documentation covers development (routing, the data layers and live streams, local services) and deployment (Kubernetes, Canopy, secrets, CI). Its source is in [`docs/`](docs/).
 
-## Getting started
+## Stack
 
-### Clone the repository
+- **React 19**, **TypeScript** and **Vite**
+- **TanStack Router** and **TanStack Query**, with API types generated from OpenAPI schemas
+- **Carbon Design System** and **ECharts**
+- **Vitest**, **React Testing Library** and **MSW**
+- Docker Compose for local development, Kustomize and Argo CD for staging and prod
+
+## Quick start
+
+Requires [pnpm](https://pnpm.io/installation) and Docker.
 
 ```sh
 git clone --recurse-submodules https://github.com/slaclab/lume-visual-dashboard.git
 cd lume-visual-dashboard
-```
-
-[lume-model-api](https://github.com/slaclab/lume-model-api) and [Canopy](https://github.com/slaclab/canopy) are git submodules in `external/`. The local API services in `compose.yaml` and `pnpm gen:api` use them. If you cloned without `--recurse-submodules`, fetch them with:
-
-```sh
-git submodule update --init
-```
-
-Each submodule is pinned to a commit. To move one to the latest upstream `main`, then commit the new pointer:
-
-```sh
-git submodule update --remote external/canopy
-git add external/canopy && git commit -m "Bump canopy"
-```
-
-`git pull` doesn't update submodules on its own. Run `git submodule update` after pulling, or set `git config submodule.recurse true` once. A submodule is checked out at a fixed commit rather than on a branch (detached `HEAD`), so run `git switch main` (or create a branch) inside it before making changes there.
-
-### Install dependencies
-
-Requires [pnpm](https://pnpm.io/installation).
-
-```sh
 pnpm install
-```
-
-## Development
-
-| Command               | Description                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`            | Start dev server at `http://localhost:5173`                                                             |
-| `pnpm build`          | Type-check and build for production                                                                     |
-| `pnpm preview`        | Preview production build locally                                                                        |
-| `pnpm test`           | Run tests once                                                                                          |
-| `pnpm test:watch`     | Run tests in watch mode                                                                                 |
-| `pnpm test:coverage`  | Run tests with coverage report                                                                          |
-| `pnpm lint`           | Run ESLint                                                                                              |
-| `pnpm lint:fix`       | Run ESLint with auto-fix                                                                                |
-| `pnpm format`         | Format source files with Prettier                                                                       |
-| `pnpm format:check`   | Check formatting without writing                                                                        |
-| `pnpm gen:api`        | Regenerate `src/api/schema.d.ts` from `external/lume-model-api/openapi.json`                            |
-| `pnpm gen:canopy-api` | Regenerate `src/api/canopy/schema.d.ts` from the running compose `canopy` service's Hare OpenAPI schema |
-
-### Routing
-
-Routes are files in `src/routes/` ([TanStack Router file-based routing](https://tanstack.com/router/latest/docs/framework/react/routing/file-based-routing)).
-The Vite plugin regenerates `src/routeTree.gen.ts` whenever `pnpm dev`, `pnpm build` or `pnpm test`
-runs. That file is committed so `tsc` works on a fresh checkout. Don't edit it by hand.
-
-| URL                            | File                                     | Purpose                                     |
-| ------------------------------ | ---------------------------------------- | ------------------------------------------- |
-| `/`                            | `routes/index.tsx`                       | Redirects to `/models`                      |
-| `/models`                      | `routes/models/index.tsx`                | Model list                                  |
-| `/models/:modelId`             | `routes/models/$modelId.tsx`             | Layout for a model: loads config, mode tabs |
-| `/models/:modelId/`            | `routes/models/$modelId/index.tsx`       | Model config: inputs, outputs, screens      |
-| `/models/:modelId/interactive` | `routes/models/$modelId/interactive.tsx` | Interactive mode                            |
-| `/models/:modelId/streaming`   | `routes/models/$modelId/streaming.tsx`   | Streaming mode (lume-model-api live stream) |
-| `/models/:modelId/canopy`      | `routes/models/$modelId/canopy.tsx`      | Streaming mode (Canopy Hare PVs)            |
-
-To add a mode, create `src/routes/models/$modelId/<mode>.tsx` and add a `<Link>` for it in
-`$modelId.tsx`. Loaders get the `queryClient` from router context (see `src/router.ts`), so they
-prefetch with `queryClient.ensureQueryData(lumeQueries.…)` and components read the same cache
-through the usual hooks. Files or folders starting with `-` in `src/routes/` are not treated as routes.
-
-In development, the TanStack Router devtools (bottom-left) show the matched routes, params and
-loader state, next to the TanStack Query devtools (bottom-right). Neither is included in production builds.
-
-### LUME model API
-
-Set `VITE_LUME_API_BASE_URL` (see `.env.example`; copy it to `.env.local`). It defaults to
-`http://localhost:8000`. The data layer is split in three:
-
-- `src/api/endpoints.ts`: plain typed fetch functions. Base64 float32 payloads are decoded to
-  `Float32Array`.
-- `src/api/queries.ts`: `lumeKeys` and `lumeQueries`, TanStack Query `queryOptions` factories.
-  Use them with `useQuery`/`useSuspenseQuery`, or with `queryClient.ensureQueryData` in router
-  loaders.
-- `src/hooks/useLumeApi.ts`: the hooks `useModels`, `useModelConfig`, `useMachineSnapshot` and
-  `useEvaluate`. `useEvaluate` is debounced and keeps showing the previous result while it loads.
-
-```tsx
-const { data: config } = useModelConfig(model);
-const { data, isPlaceholderData } = useEvaluate(model, { screen: 'OTR_B', inputs: { Q1: q } });
-```
-
-#### Live stream (server-sent events)
-
-`GET /api/v1/models/{name}/live/stream` evaluates the model over and over at the machine's
-current inputs and sends each result as a `frame` event. A frame has the same shape as an evaluate
-response, with `input_sources` set to `live`, or to `baseline` for a PV that couldn't be read. It
-isn't a TanStack Query, because the data is pushed:
-
-- `src/api/sse.ts`: `parseEventStream`, a `text/event-stream` parser over a `fetch` body.
-- `src/api/live.ts`:
-  - `openLiveStream` is one connection, as an async iterable of decoded `frame` and `error`
-    events. It uses `fetch` rather than `EventSource`, so a request refused before the stream
-    opens throws a `LumeApiError` with the server's `detail`. That covers a bad screen or output
-    id (400), an unknown model (404), and a deployment that doesn't serve live data or has hit its
-    limit on live loops (503).
-  - `liveStream` is a shared, reconnecting subscription. Subscribers to the same model and
-    output set share one connection, since browsers allow only about 6 per origin. Only the
-    latest frame is kept.
-- `src/hooks/useLiveStream.ts`: `useLiveStream(model, { screen, outputs })`.
-
-```tsx
-const { status, frame, errorMessage, error, reconnect } = useLiveStream(model, {
-  screen: 'OTR3',
-  outputs: ['QUAD:IN20:525:BCTRL'],
-});
-```
-
-`status` is one of these values:
-
-| `status` | Meaning |
-| --- | --- |
-| `idle` | Not connected: no model name, no `screen` or `outputs`, or `{ enabled: false }`. |
-| `connecting` | The first connection attempt. |
-| `open` | Connected. Frames come as fast as the model runs. For `cu_hxr_staged` that's a few seconds apart, with no fixed rate. |
-| `reconnecting` | The connection dropped or failed, and the hook is trying again. `error` holds the cause and `frame` keeps the last frame. |
-| `closed` | Stopped for good, because retrying can't fix the error. `error` says why, and `reconnect()` tries again. |
-
-How the hook handles errors:
-
-- **Errors on the stream.** The server sends an `error` event as `{"message": ...}` and keeps
-  streaming. The hook puts its text in `errorMessage` and clears it with the next frame.
-- **When it reconnects.** It reconnects when the connection drops, when the server ends the
-  stream, and on 5xx responses from a proxy. It waits 1 s, then doubles the wait each time up to
-  30 s, and starts again at 1 s once a frame arrives.
-- **When it stops.** A 4xx, or a 503 with a JSON `detail` from the API itself, closes the stream.
-- **When it disconnects.** It disconnects 0.5 s after the last component using the stream
-  unmounts. The delay means a React StrictMode remount reuses the same connection.
-
-### Canopy (Hare live PVs)
-
-Live PV data comes from the Hare module of [Canopy](https://github.com/slaclab/canopy). Set
-`VITE_CANOPY_API_BASE_URL` (default `http://localhost:8050`) and `VITE_CANOPY_API_KEY` (default
-`dev`, sent as `X-API-Key`). The key ends up in the browser bundle, so only use a read-only key.
-The Canopy code in `src/api/canopy/` follows the same three-layer pattern as the lume-model-api
-code above: `getPv`/`describePv`, `hareKeys`/`hareQueries`, and the hooks in
-`src/hooks/useHare.ts`. Errors are thrown as the same `LumeApiError`.
-
-```tsx
-const { data: meta } = usePvMeta('TEST:SINE'); // units, precision, limits, enum labels
-const { data: pv } = usePv('TEST:SINE', { refetchInterval: 1000 }); // value, severity, tsNs
-```
-
-#### Hare stream (WebSocket)
-
-For values that update continuously, use the stream instead of polling `usePv`. Hare sends each
-PV's value and metadata once it connects, then batches changes every 100 ms.
-
-- `src/api/canopy/stream.ts`: `hareStream(pvNames)` is a shared subscription over one WebSocket
-  (`/hare/v1/ws/pvs`).
-  - Each PV is reference counted, so it is subscribed once however many components watch it.
-    PVs requested in the same render go out in one `subscribe` message.
-  - A PV is unsubscribed 0.5 s after its last component unmounts. The socket closes when no PVs
-    are left.
-- `src/hooks/useHare.ts`: `usePvStream(pv)` for one PV, and `useHareStream(pvNames)` for several.
-
-```tsx
-const { status, value, meta, rejected, backend } = usePvStream('TEST:SINE');
-const { pvs } = useHareStream(['TEST:SINE', 'TEST:WF']); // pvs['TEST:WF'].value?.value
-```
-
-`status` takes the same values as `useLiveStream`'s (`idle`, `connecting`, `open`,
-`reconnecting`, `closed`), and both return `reconnect()`.
-
-- **Values and metadata.** `value` is the latest `PVValue` and `meta` is its `PVMeta`. `meta` can
-  arrive after the first value, and a PV that doesn't connect within about 2 s first arrives with
-  `connected: false`.
-- **Rejected names.** `rejected` is set when Hare refuses a PV name. The PV's other fields stay
-  empty and the rest of the list subscribes normally.
-- **Reconnecting.** After a drop the hook reconnects with the same backoff as the lume live stream
-  (1 s, doubling up to 30 s) and re-subscribes every PV. Values are kept in the meantime. Hare sends
-  a heartbeat every 5 s, so 15 s with no message also triggers a reconnect.
-- **API key.** Browsers can't set headers on a WebSocket, so the key goes in the URL as
-  `?api_key=`. They also report a refused key as a plain dropped connection. When a connection
-  fails to open, the hook checks the key with `GET /hare/v1/health/summary`. On a 401 or 403 it
-  sets `status` to `closed` with that `LumeApiError` instead of retrying.
-- **Backend.** `backend` comes from the heartbeat and is `simulation` or `epics`. Use it to warn
-  when the data is simulated.
-
-### Choosing a stream
-
-A model view can use either stream, or both together:
-
-| Need | Use |
-| --- | --- |
-| Model outputs (screens, beam parameters) evaluated at the machine's current inputs | `useLiveStream` (lume-model-api SSE) |
-| Raw machine readbacks or setpoints, e.g. to compare with the model's prediction | `usePvStream` / `useHareStream` (Canopy Hare WebSocket) |
-| A model's inputs as the machine sees them, without evaluating | `useHareStream(config.inputs.map((i) => i.id))`, or `useMachineSnapshot` for a one-off read |
-
-The two run independently: each has its own connection, `status` and `error`.
-
-The streaming pages read either source through `useModelStream(source, model, config)`
-(`src/hooks/useModelStream.ts`), which converts both into one snapshot of inputs and outputs. It
-updates that snapshot at most once per second (`modelStreamTiming.displayIntervalMs`, or the
-`intervalMs` option), so the tables don't re-render on every frame. The connection still receives
-every update, and the latest values are shown at the end of each interval.
-
-## Docker
-
-Run the Vite dev server with hot reloading at `http://localhost:5173`:
-
-```sh
 docker compose up
 ```
 
-The project directory is bind-mounted into the container, and `node_modules` lives in a Docker volume so it doesn't conflict with your host install. Dependencies are re-synced from the lockfile each time the container starts.
+Then open <http://localhost:5173>. Compose runs the Vite dev server, [lume-model-api](https://github.com/slaclab/lume-model-api) and Canopy, built from the git submodules in `external/`, with simulated machine data. If you cloned without `--recurse-submodules`, run `git submodule update --init` first.
 
-`docker compose up` also starts `lume-model-api` at `http://localhost:8000` (Swagger UI at `/docs`), which the dashboard calls by default:
+See [Getting started](https://slaclab.github.io/lume-visual-dashboard/getting-started/) for configuration, submodules and running Vite outside Docker.
 
-- **Model.** It hosts the real `cu_hxr_staged` model, tracked to `OTR3` with 1000 particles. The image is built from the upstream `external/lume-model-api/Dockerfile`, which installs conda, Bmad, torch and the lattices.
-- **Platform.** The image is amd64-only, so on Apple Silicon the first build and each model start are slow under emulation. The container isn't healthy until every worker has built the model, which can take a few minutes.
-- **Code changes.** Edits under `external/lume-model-api/` need `docker compose up --build lume-model-api`.
-- **Live stream.** The container serves `live/stream` and `machine-snapshot` from the same port as config and evaluate (`LUME_ROLE=all`), so streaming needs no extra service. On the cluster those two routes run on a separate live pod behind the same base URL. EPICS can't be reached from the container, so the live inputs are synthetic: they oscillate around each input's default.
+## Commands
 
-To watch the raw stream:
+| Command        | Description                                 |
+| -------------- | ------------------------------------------- |
+| `pnpm dev`     | Start the dev server at `localhost:5173`    |
+| `pnpm build`   | Type-check and build for production         |
+| `pnpm test`    | Run the tests once                          |
+| `pnpm lint`    | Run ESLint                                  |
+| `pnpm format`  | Format with Prettier                        |
 
-```sh
-curl -N "http://localhost:8000/api/v1/models/cu_hxr_staged/live/stream?screen=OTR3"
-```
+The [full list](https://slaclab.github.io/lume-visual-dashboard/getting-started/#commands) includes the API type generators.
 
-`docker compose up` also starts Canopy from `external/canopy` at `http://localhost:8050` (Swagger UI at `/docs`). It runs the API only (no Postgres, Redis or worker), which is all Hare needs, and reloads when you edit `external/canopy/src/`. The EPICS backend is simulated, so any PV name returns synthetic data. The name's suffix picks the value kind: `:ENUM`, `:WF`, `:STR`, `:TABLE`, and anything else is a scalar sine wave. Prefix a name with `pva://` to use PV Access. The service accepts one read-only, Hare-only API key, `dev`:
+## Deployment
 
-```sh
-curl -H "X-API-Key: dev" http://localhost:8050/hare/v1/pvs/TEST:SINE
-```
+| Environment | Branch    | URL                                                                       |
+| ----------- | --------- | ------------------------------------------------------------------------- |
+| Staging     | `staging` | `https://ad-accel-online-ml-dev.slac.stanford.edu/lume-visual-dashboard/` |
+| Prod        | `main`    | `https://ard-modeling-service.slac.stanford.edu/lume-visual-dashboard/`   |
 
-If port 8050 is taken, set `CANOPY_HOST_PORT` for compose and point `VITE_CANOPY_API_BASE_URL` at the new port.
-
-To read from a real IOC instead, set the EPICS variables in a repo-root `.env`. Docker Compose reads that file, not `.env.local`, which is only for Vite settings. See `.env.example`, then run `docker compose up -d canopy`:
-
-```sh
-CANOPY_EPICS__BACKEND=epics
-EPICS_CA_ADDR_LIST=10.0.0.42          # space-separated IOC IPs; host.docker.internal for an IOC on this machine
-EPICS_CA_AUTO_ADDR_LIST=NO
-EPICS_PVA_ADDR_LIST=10.0.0.42         # for pva:// names
-EPICS_PVA_AUTO_ADDR_LIST=NO
-```
-
-Docker's bridged network can't carry EPICS broadcast discovery, so list each IOC's address explicitly. The container reaches IOCs through your machine, so it needs the same network access (for SLAC IOCs, the right network or VPN). The frontend needs no changes. A read of a PV that can't be reached waits for `CANOPY_EPICS__CA_TIMEOUT_S` (default 5 s), then returns `connected: false` with an `error` message. To try this without facility access, run Canopy's test IOC on your machine from `external/canopy`, then set `EPICS_CA_ADDR_LIST=host.docker.internal`. The IOC's beacon warnings are harmless:
-
-```sh
-EPICS_CAS_AUTO_BEACON_ADDR_LIST=NO EPICS_CAS_BEACON_ADDR_LIST=127.0.0.1 \
-  uv run --no-project --with caproto python scripts/sim_ioc.py
-```
-
-The `canopy` image is built for `linux/amd64` because PyPI has no Linux arm64 wheels for `p4p`/`pvxslibs`, and the versions built from source don't match ("PVXS ABI mismatch"), so the `epics` backend can't start. On Apple Silicon it runs under emulation.
-
-`Dockerfile` is for local development only. The production image used by Kubernetes is built from `Dockerfile.prod` (static build served by unprivileged nginx on port 8080, with a health check at `/healthz`).
-
-To run the production image locally via compose (served at `http://localhost:8080`):
-
-```sh
-docker compose --profile prod up --build
-```
-
-The production image is built for the `/lume-visual-dashboard/` URL path by default. Override `BASE_PATH` to serve it from the root when running it standalone:
-
-```sh
-docker build -f Dockerfile.prod --build-arg BASE_PATH=/ -t lume-visual-dashboard .
-docker run --rm -p 8080:8080 lume-visual-dashboard
-```
-
-## Kubernetes
-
-Manifests live in `deploy/kubernetes` and are managed with Kustomize:
-
-- `base/`: Namespace, Deployment, Service, Ingress serving the app at `/lume-visual-dashboard`, and the `dashboard-config` ConfigMap
-- `overlays/staging/`: staging on the dev cluster. Swaps the ingress host to the dev domain, sets the staging API URLs in `config.js`, and pins the image tag built from the `staging` branch.
-- `overlays/prod/`: prod cluster. Sets the prod API URLs in `config.js` and pins the image tag built from `main`.
-
-| Environment | Branch    | Overlay            | URL                                                                       |
-| ----------- | --------- | ------------------ | ------------------------------------------------------------------------- |
-| Staging     | `staging` | `overlays/staging` | `https://ad-accel-online-ml-dev.slac.stanford.edu/lume-visual-dashboard/` |
-| Prod        | `main`    | `overlays/prod`    | `https://ard-modeling-service.slac.stanford.edu/lume-visual-dashboard/`   |
-
-Both hosts are reachable from the SLAC network only (see the ingress allowlist in `base/ingress.yaml`).
-
-### API URLs per environment
-
-The image doesn't bake in API URLs. Each overlay's `config.js` becomes the `dashboard-config` ConfigMap, which is mounted over the image's `/config.js`. `index.html` loads it before the app starts. To point an environment at a different API, edit its `config.js` and push. Changes under `deploy/` don't trigger an image build, and the content-hashed ConfigMap name rolls the pod.
-
-| Key                | Staging                                                           | Prod                                                                               |
-| ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `lumeApiBaseUrl`   | `https://ad-accel-online-ml-dev.slac.stanford.edu/lume-model-api` | `https://ard-modeling-service.slac.stanford.edu/lume-model-api` (not deployed yet) |
-| `canopyApiBaseUrl` | `null` (no Canopy in the cluster)                                 | `null` (no Canopy in the cluster)                                                  |
-| `canopyApiKey`     | unset                                                             | unset                                                                              |
-
-`canopyApiBaseUrl: null` turns the Canopy page off: it says Canopy isn't configured instead of connecting. Once Canopy is deployed, set its URL and a read-only `canopyApiKey`. The key is sent to the browser, so a ConfigMap is as private as it gets.
-
-Unset keys fall back to the `VITE_*` build-time variables, then to the local docker compose defaults. Locally, `public/config.js` is empty, so `.env.local` still applies.
-
-Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow. It runs on every push to `main` or `staging`, except pushes that only change `deploy/`, `docs/`, or Markdown. Each build is tagged with the 7-character commit SHA, and the workflow commits that tag to the matching overlay (`main` → `overlays/prod`, `staging` → `overlays/staging`) on the same branch. Argo CD (configured in [slaclab/ad-argocd-apps](https://github.com/slaclab/ad-argocd-apps)) syncs each overlay from git automatically, so pushing to a branch is a deploy.
-
-To deploy a change to staging, merge it into `staging`. Once it has been verified there, merge it into `main` for prod.
-
-You can also run the workflow manually from another branch. It pushes an image tagged `latest`, or with the tag you enter, and it doesn't update either overlay.
-
-To preview or apply manually instead:
-
-```sh
-kubectl kustomize deploy/kubernetes/overlays/staging   # preview staging
-kubectl kustomize deploy/kubernetes/overlays/prod      # preview prod
-kubectl apply -k deploy/kubernetes/overlays/prod
-```
-
-The ingress strips the `/lume-visual-dashboard` prefix before forwarding to nginx, so if the path changes, update both the ingress and the `BASE_PATH` build arg in `Dockerfile.prod`.
+Pushing to `staging` or `main` builds the image and deploys it through Argo CD. Both hosts are reachable from the SLAC network only. Some values are kept out of git and applied by hand; see [Secrets](https://slaclab.github.io/lume-visual-dashboard/deployment/secrets/) before the first deploy to a cluster. Everything else is under [Deployment](https://slaclab.github.io/lume-visual-dashboard/deployment/kubernetes/).
 
 ## Documentation
 
-The `docs/` directory contains a [Zensical](https://zensical.org) documentation site. To preview it locally:
-
 ```sh
-uv sync
+uv sync --group docs
 uv run zensical serve
 ```
 
-Docs are automatically built and deployed to GitHub Pages on pushes to `main`.
-
-## CI
-
-Three GitHub Actions workflows run on pull requests and pushes to `main`:
-
-- **Lint & Format** — ESLint, Prettier, and TypeScript type-check
-- **Test** — Vitest test suite
-- **Build & Deploy Documentation** — builds the Zensical docs site and deploys to GitHub Pages
+The site is published to GitHub Pages from `main`. See [Documentation](https://slaclab.github.io/lume-visual-dashboard/development/documentation/) for how to add pages.

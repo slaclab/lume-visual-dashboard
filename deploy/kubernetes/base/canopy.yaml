@@ -1,0 +1,119 @@
+# Canopy API serving only what the dashboard uses: Hare live PVs over REST and WebSocket.
+# Mirrors the `canopy` service in compose.yaml. It runs just the API process, without Postgres,
+# Redis or the worker, which only Squirrel, Magpie, Jobs and database-backed API keys need.
+# Keys come from CANOPY_API_KEYS alone, which Canopy checks in memory without a database.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lume-canopy
+  labels:
+    app.kubernetes.io/name: lume-canopy
+spec:
+  # Every replica opens its own EPICS monitors, so scaling out multiplies gateway load.
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lume-canopy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lume-canopy
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        # `appuser` in upstream docker/Dockerfile.prod
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: canopy
+          image: lume-canopy-image
+          imagePullPolicy: IfNotPresent
+          # --root-path only affects the links Swagger generates. The ingress strips
+          # /lume-canopy, so the app still serves every route from /.
+          command:
+            - uvicorn
+            - canopy.main:app
+            - --host=0.0.0.0
+            - --port=8000
+            - --root-path=/lume-canopy
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: CANOPY_DEBUG
+              value: "false"
+            - name: CANOPY_EPICS__BACKEND
+              value: epics
+            - name: CANOPY_EPICS__CA_TIMEOUT_S
+              value: "5"
+            - name: CANOPY_EPICS__PVA_TIMEOUT_S
+              value: "5"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            # Pod networking can't carry broadcast discovery, so only the gateways listed in
+            # EPICS_CA_ADDR_LIST / EPICS_PVA_ADDR_LIST (from the Secret below) are searched.
+            - name: EPICS_CA_AUTO_ADDR_LIST
+              value: "NO"
+            - name: EPICS_PVA_AUTO_ADDR_LIST
+              value: "NO"
+          envFrom:
+            # CANOPY_API_KEYS ("<token>:read@hare", the token the dashboard's canopy-key.js
+            # sends), EPICS_CA_ADDR_LIST and EPICS_PVA_ADDR_LIST. Kept out of git: created
+            # per cluster from overlays/<env>/secrets.yaml (see secrets.example.yaml). Read at
+            # startup, so restart the Deployment after changing it.
+            - secretRef:
+                name: lume-canopy-env
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lume-canopy
+  labels:
+    app.kubernetes.io/name: lume-canopy
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: lume-canopy
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http

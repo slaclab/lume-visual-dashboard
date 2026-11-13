@@ -66,12 +66,22 @@ spec:
               mountPath: /usr/share/nginx/html/config.js
               subPath: config.js
               readOnly: true
+            # Sets canopyApiKey, from a Secret so the token stays out of git (see
+            # secrets.example.yaml). A subPath mount doesn't follow Secret updates, so restart
+            # the Deployment after changing it.
+            - name: canopy-key
+              mountPath: /usr/share/nginx/html/canopy-key.js
+              subPath: canopy-key.js
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
         - name: config
           configMap:
             name: dashboard-config
+        - name: canopy-key
+          secret:
+            secretName: lume-visual-dashboard-canopy-key
 ---
 apiVersion: v1
 kind: Service

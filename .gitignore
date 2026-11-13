@@ -40,3 +40,6 @@ lerna-debug.log*
 site/
 
 .pnpm-store/
+
+# Kubernetes Secrets, applied by hand (see deploy/kubernetes/secrets.example.yaml)
+deploy/kubernetes/overlays/*/secrets.yaml
