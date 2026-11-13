@@ -21,7 +21,7 @@ labels:
 # Keep each newTag directly under its name; the workflow's sed relies on that.
 images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
-    newTag: "3fd4a6c"
+    newTag: "1174a77"
   - name: ghcr.io/slaclab/canopy
     newTag: "39e2e41"
 
