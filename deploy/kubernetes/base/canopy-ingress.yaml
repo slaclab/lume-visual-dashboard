@@ -1,0 +1,30 @@
+# Canopy on the dashboard's host, so the browser calls it same-origin. Kept separate from the
+# dashboard's Ingress so the WebSocket timeouts below apply only to Canopy.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lume-canopy
+  labels:
+    app.kubernetes.io/name: lume-canopy
+  annotations:
+    nginx.ingress.kubernetes.io/whitelist-source-range: "71.198.255.25,134.79.0.0/16,172.16.0.0/12,208.45.173.162,216.46.165.69,172.27.8.0/24"
+    # Strip the /lume-canopy prefix; Canopy serves /hare/..., /health and /docs from /.
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # The Hare WebSocket (/hare/v1/ws/pvs) stays open as long as a page is, and the browser can
+    # go quiet for minutes between subscription changes. The 60 s default would cut it.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ard-modeling-service.slac.stanford.edu
+      http:
+        paths:
+          - path: /lume-canopy(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: lume-canopy
+                port:
+                  name: http

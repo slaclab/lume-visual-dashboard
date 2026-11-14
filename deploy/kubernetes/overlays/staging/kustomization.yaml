@@ -4,20 +4,32 @@ kind: Kustomization
 resources:
   - ../../base
 
+# API URLs for this environment; see config.js. Only public values belong in this directory:
+# the Canopy key and EPICS gateways live in secrets.yaml (gitignored), applied by hand.
+configMapGenerator:
+  - name: dashboard-config
+    behavior: replace
+    files:
+      - config.js
+
 labels:
   - pairs:
       environment: staging
 
-# The update-image workflow sets newTag to the 7-char commit SHA on each build from staging.
+# The update-image workflow sets both tags on each build from staging: the dashboard to the
+# 7-char commit SHA, Canopy to the 7-char SHA of the external/canopy submodule commit.
+# Keep each newTag directly under its name; the workflow's sed relies on that.
 images:
   - name: ghcr.io/slaclab/lume-visual-dashboard
-    newTag: latest
+    newTag: "1174a77"
+  - name: ghcr.io/slaclab/canopy
+    newTag: "39e2e41"
 
 # The dev cluster used for staging has a different domain than prod
 patches:
   - target:
       kind: Ingress
-      name: lume-visual-dashboard
+      name: lume-visual-dashboard|lume-canopy
     patch: |-
       - op: replace
         path: /spec/rules/0/host

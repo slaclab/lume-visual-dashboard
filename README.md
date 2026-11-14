@@ -1,117 +1,60 @@
-# EED SWApps React Template
+# LUME Visual Dashboard
 
-A template repository for React projects in the EED Software Applications Group at SLAC National Accelerator Laboratory.
+A React dashboard for visualizing [LUME](https://github.com/slaclab/lume-model-api) accelerator models next to live machine data from [Canopy](https://github.com/slaclab/canopy).
 
-## What's included
+**Documentation: <https://slaclab.github.io/lume-visual-dashboard/>**
 
-- **React 19** with **TypeScript**
-- **Vite** for fast dev server and builds
-- **Vitest** + **React Testing Library** for unit/integration tests
-- **ESLint** + **Prettier** + **Husky** pre-commit hooks for consistent code style
-- **Zensical** (MkDocs-based) documentation site with GitHub Pages deployment
-- GitHub Actions workflows for lint, type-check, test, and docs deployment
+The documentation covers development (routing, the data layers and live streams, local services) and deployment (Kubernetes, Canopy, secrets, CI). Its source is in [`docs/`](docs/).
 
-## Getting started
+## Stack
 
-### Create a new project from this template
+- **React 19**, **TypeScript** and **Vite**
+- **TanStack Router** and **TanStack Query**, with API types generated from OpenAPI schemas
+- **Carbon Design System** and **ECharts**
+- **Vitest**, **React Testing Library** and **MSW**
+- Docker Compose for local development, Kustomize and Argo CD for staging and prod
 
-Click **Use this template** on GitHub, or clone and reinitialize:
+## Quick start
 
-```sh
-git clone https://github.com/slaclab/swapps-react-template.git my-app
-cd my-app
-git remote remove origin
-```
-
-### After cloning, update the project name
-
-1. `package.json` — update `name` and `description`
-2. `index.html` — update `<title>`
-3. `pyproject.toml` — update `name` and `description`
-4. `zensical.toml` — update `site_name`, `site_description`, `repo_name`, `repo_url`, and the social link
-
-### Install dependencies
-
-Requires [pnpm](https://pnpm.io/installation).
+Requires [pnpm](https://pnpm.io/installation) and Docker.
 
 ```sh
+git clone --recurse-submodules https://github.com/slaclab/lume-visual-dashboard.git
+cd lume-visual-dashboard
 pnpm install
-```
-
-## Development
-
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start dev server at `http://localhost:5173` |
-| `pnpm build` | Type-check and build for production |
-| `pnpm preview` | Preview production build locally |
-| `pnpm test` | Run tests once |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm test:coverage` | Run tests with coverage report |
-| `pnpm lint` | Run ESLint |
-| `pnpm lint:fix` | Run ESLint with auto-fix |
-| `pnpm format` | Format source files with Prettier |
-| `pnpm format:check` | Check formatting without writing |
-
-## Docker
-
-Run the Vite dev server with hot reloading at `http://localhost:5173`:
-
-```sh
 docker compose up
 ```
 
-The project directory is bind-mounted into the container, and `node_modules` lives in a Docker volume so it doesn't conflict with your host install. Dependencies are re-synced from the lockfile each time the container starts.
+Then open <http://localhost:5173>. Compose runs the Vite dev server, [lume-model-api](https://github.com/slaclab/lume-model-api) and Canopy, built from the git submodules in `external/`, with simulated machine data. If you cloned without `--recurse-submodules`, run `git submodule update --init` first.
 
-`Dockerfile` is for local development only. The production image used by Kubernetes is built from `Dockerfile.prod` (static build served by unprivileged nginx on port 8080, with a health check at `/healthz`).
+See [Getting started](https://slaclab.github.io/lume-visual-dashboard/getting-started/) for configuration, submodules and running Vite outside Docker.
 
-To run the production image locally via compose (served at `http://localhost:8080`):
+## Commands
 
-```sh
-docker compose --profile prod up --build
-```
+| Command        | Description                                 |
+| -------------- | ------------------------------------------- |
+| `pnpm dev`     | Start the dev server at `localhost:5173`    |
+| `pnpm build`   | Type-check and build for production         |
+| `pnpm test`    | Run the tests once                          |
+| `pnpm lint`    | Run ESLint                                  |
+| `pnpm format`  | Format with Prettier                        |
 
-The production image is built for the `/lume-visual-dashboard/` URL path by default. Override `BASE_PATH` to serve it from the root when running it standalone:
+The [full list](https://slaclab.github.io/lume-visual-dashboard/getting-started/#commands) includes the API type generators.
 
-```sh
-docker build -f Dockerfile.prod --build-arg BASE_PATH=/ -t lume-visual-dashboard .
-docker run --rm -p 8080:8080 lume-visual-dashboard
-```
+## Deployment
 
-## Kubernetes
+| Environment | Branch    | URL                                                                       |
+| ----------- | --------- | ------------------------------------------------------------------------- |
+| Staging     | `staging` | `https://ad-accel-online-ml-dev.slac.stanford.edu/lume-visual-dashboard/` |
+| Prod        | `main`    | `https://ard-modeling-service.slac.stanford.edu/lume-visual-dashboard/`   |
 
-Manifests live in `deploy/kubernetes` and are managed with Kustomize:
-
-- `base/` — Namespace, Deployment, Service, and Ingress serving the app at `/lume-visual-dashboard`
-- `overlays/dev/` — dev cluster (sets the dev domain, uses the `latest` image)
-- `overlays/prod/` — prod cluster (pins a specific image tag)
-
-Images are built from `Dockerfile.prod` and pushed to `ghcr.io/slaclab/lume-visual-dashboard` by the **Update Docker Image** workflow. It runs on every push to `main` (except changes limited to `deploy/`, `docs/`, or Markdown) and can also be run manually. Builds from `main` are tagged with the 7-character commit SHA, and the workflow commits that tag to `overlays/prod/kustomization.yaml`. Argo CD (configured in [slaclab/ad-argocd-apps](https://github.com/slaclab/ad-argocd-apps)) watches the prod overlay on `main` and syncs it to the cluster automatically.
-
-To preview or apply manually instead:
-
-```sh
-kubectl kustomize deploy/kubernetes/overlays/prod   # preview
-kubectl apply -k deploy/kubernetes/overlays/prod
-```
-
-The ingress strips the `/lume-visual-dashboard` prefix before forwarding to nginx, so if the path changes, update both the ingress and the `BASE_PATH` build arg in `Dockerfile.prod`.
+Pushing to `staging` or `main` builds the image and deploys it through Argo CD. Both hosts are reachable from the SLAC network only. Some values are kept out of git and applied by hand; see [Secrets](https://slaclab.github.io/lume-visual-dashboard/deployment/secrets/) before the first deploy to a cluster. Everything else is under [Deployment](https://slaclab.github.io/lume-visual-dashboard/deployment/kubernetes/).
 
 ## Documentation
 
-The `docs/` directory contains a [Zensical](https://zensical.org) documentation site. To preview it locally:
-
 ```sh
-uv sync
+uv sync --group docs
 uv run zensical serve
 ```
 
-Docs are automatically built and deployed to GitHub Pages on pushes to `main`.
-
-## CI
-
-Three GitHub Actions workflows run on pull requests and pushes to `main`:
-
-- **Lint & Format** — ESLint, Prettier, and TypeScript type-check
-- **Test** — Vitest test suite
-- **Build & Deploy Documentation** — builds the Zensical docs site and deploys to GitHub Pages
+The site is published to GitHub Pages from `main`. See [Documentation](https://slaclab.github.io/lume-visual-dashboard/development/documentation/) for how to add pages.

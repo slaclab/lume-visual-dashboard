@@ -65,6 +65,21 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
+      # Canopy isn't built here: slaclab/canopy's Build Image workflow publishes
+      # ghcr.io/slaclab/canopy:<short-sha> for each of its main commits. Deploy the one the
+      # external/canopy submodule points at, read from the gitlink (no submodule checkout needed).
+      # Checked before anything is pushed, so a submodule bump to an unpublished commit fails
+      # here instead of deploying a tag that can't be pulled.
+      - name: Set CANOPY_TAG
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+        run: |
+          CANOPY_TAG=$(git rev-parse --short=7 HEAD:external/canopy)
+          if ! docker manifest inspect "ghcr.io/slaclab/canopy:${CANOPY_TAG}" >/dev/null; then
+            echo "::error::ghcr.io/slaclab/canopy:${CANOPY_TAG} not found. Point external/canopy at a slaclab/canopy main commit whose Build Image run published an image (re-run this workflow if that build is still in progress)."
+            exit 1
+          fi
+          echo "CANOPY_TAG=$CANOPY_TAG" >> $GITHUB_ENV
+
       - name: Build Docker image
         run: |
           docker build -f Dockerfile.prod -t $IMAGE_NAME:$IMAGE_TAG . --provenance=false
@@ -72,10 +87,11 @@ jobs:
       - name: Push Docker image
         run: docker push ghcr.io/${OWNER_LC}/$IMAGE_NAME:$IMAGE_TAG
 
-      # Argo CD deploys whatever is in git, so commit the new tag to the overlay
+      # Argo CD deploys whatever is in git, so commit the new tags to the overlay
       # for the branch that triggered the build (main -> prod, staging ->
       # staging). Pushes made with GITHUB_TOKEN don't trigger new workflow runs.
-      - name: Update overlay image tag
+      # Each sed only touches the newTag line that follows its image's name.
+      - name: Update overlay image tags
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
         run: |
           if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
@@ -86,13 +102,17 @@ jobs:
             BRANCH=staging
           fi
           OVERLAY="deploy/kubernetes/overlays/${ENVIRONMENT}/kustomization.yaml"
-          sed -i -E "s|^([[:space:]]*newTag:).*|\1 \"${IMAGE_TAG}\"|" "$OVERLAY"
-          grep -q "newTag: \"${IMAGE_TAG}\"" "$OVERLAY"
+          set_tag() {
+            sed -i -E "\|name: ghcr\.io/slaclab/$1\$|,/newTag:/ s|^([[:space:]]*newTag:).*|\1 \"$2\"|" "$OVERLAY"
+            grep -A1 -E "name: ghcr\.io/slaclab/$1\$" "$OVERLAY" | grep -q "newTag: \"$2\""
+          }
+          set_tag "${IMAGE_NAME}" "${IMAGE_TAG}"
+          set_tag canopy "${CANOPY_TAG}"
           git add "$OVERLAY"
           if git diff --cached --quiet; then
-            echo "${ENVIRONMENT} overlay already at ${IMAGE_TAG}"
+            echo "${ENVIRONMENT} overlay already at ${IMAGE_TAG} / canopy ${CANOPY_TAG}"
             exit 0
           fi
-          git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG} to ${ENVIRONMENT}"
+          git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG} and canopy:${CANOPY_TAG} to ${ENVIRONMENT}"
           git pull --rebase origin "${BRANCH}"
           git push origin "HEAD:${BRANCH}"

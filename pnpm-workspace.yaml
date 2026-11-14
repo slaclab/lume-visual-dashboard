@@ -21,3 +21,4 @@ allowBuilds:
   '@ibm/plex-sans-thai-looped': true
   '@ibm/plex-serif': true
   '@parcel/watcher': true
+  msw: false

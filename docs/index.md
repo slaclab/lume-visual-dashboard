@@ -1,172 +1,39 @@
 ---
-icon: lucide/rocket
+icon: lucide/house
 ---
 
-# Get started
+# LUME Visual Dashboard
 
-For full documentation visit [zensical.org](https://zensical.org/docs/).
+A React dashboard for visualizing [LUME](https://github.com/slaclab/lume-model-api) accelerator models next to live machine data.
 
-## Commands
+It talks to two backends, both called directly from the browser:
 
-- [`zensical new`][new] - Create a new project
-- [`zensical serve`][serve] - Start local web server
-- [`zensical build`][build] - Build your site
+| Backend                                                          | Provides                                                                                     | Code               |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------ |
+| [lume-model-api](https://github.com/slaclab/lume-model-api)      | The model list, each model's config, evaluate, and a live stream of the model run at the machine's current inputs | `src/api/`         |
+| [Canopy](https://github.com/slaclab/canopy) (its Hare module)    | Live EPICS PV values and metadata over REST and a WebSocket                                  | `src/api/canopy/`  |
 
-  [new]: https://zensical.org/docs/usage/new/
-  [serve]: https://zensical.org/docs/usage/preview/
-  [build]: https://zensical.org/docs/usage/build/
+Both are git submodules in `external/`, and `compose.yaml` runs them locally with simulated machine data.
 
-## Examples
+## Where to start
 
-### Admonitions
+- **New to the project:** [Getting started](getting-started.md) covers cloning, installing, running everything locally, and the `pnpm` commands.
+- **Working on the app:**
+    - [Routing](development/routing.md): URLs, route files, and adding a mode.
+    - [lume-model-api](development/lume-model-api.md) and [Canopy](development/canopy.md): the data layers, hooks, and live streams.
+    - [Choosing a stream](development/streams.md): which stream a view should use.
+    - [Local services](development/local-services.md): the Docker Compose services, and reading from a real IOC.
+- **Deploying:**
+    - [Kubernetes](deployment/kubernetes.md): environments, overlays, and runtime config.
+    - [Canopy in the cluster](deployment/canopy.md) and [Secrets](deployment/secrets.md): the Canopy service, its API key, and the values kept out of git.
+    - [CI and image builds](deployment/ci.md): checks, image builds, and how tags reach the overlays.
+- **Editing these docs:** [Documentation](development/documentation.md).
 
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/)
+## Stack
 
-!!! note
-
-    This is a **note** admonition. Use it to provide helpful information.
-
-!!! warning
-
-    This is a **warning** admonition. Be careful!
-
-### Details
-
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/#collapsible-blocks)
-
-??? info "Click to expand for more info"
-
-    This content is hidden until you click to expand it.
-    Great for FAQs or long explanations.
-
-## Code Blocks
-
-> Go to [documentation](https://zensical.org/docs/authoring/code-blocks/)
-
-```python hl_lines="2" title="Code blocks"
-def greet(name):
-    print(f"Hello, {name}!") # (1)!
-
-greet("Python")
-```
-
-1.  > Go to [documentation](https://zensical.org/docs/authoring/code-blocks/#code-annotations)
-
-    Code annotations allow to attach notes to lines of code.
-
-Code can also be highlighted inline: `#!python print("Hello, Python!")`.
-
-## Content tabs
-
-> Go to [documentation](https://zensical.org/docs/authoring/content-tabs/)
-
-=== "Python"
-
-    ``` python
-    print("Hello from Python!")
-    ```
-
-=== "Rust"
-
-    ``` rs
-    println!("Hello from Rust!");
-    ```
-
-## Diagrams
-
-> Go to [documentation](https://zensical.org/docs/authoring/diagrams/)
-
-```mermaid
-graph LR
-  A[Start] --> B{Error?};
-  B -->|Yes| C[Hmm...];
-  C --> D[Debug];
-  D --> B;
-  B ---->|No| E[Yay!];
-```
-
-## Footnotes
-
-> Go to [documentation](https://zensical.org/docs/authoring/footnotes/)
-
-Here's a sentence with a footnote.[^1]
-
-Hover it, to see a tooltip.
-
-[^1]: This is the footnote.
-
-## Formatting
-
-> Go to [documentation](https://zensical.org/docs/authoring/formatting/)
-
-- ==This was marked (highlight)==
-- ^^This was inserted (underline)^^
-- ~~This was deleted (strikethrough)~~
-- H~2~O
-- A^T^A
-- ++ctrl+alt+del++
-
-## Icons, Emojis
-
-> Go to [documentation](https://zensical.org/docs/authoring/icons-emojis/)
-
-- :sparkles: `:sparkles:`
-- :rocket: `:rocket:`
-- :tada: `:tada:`
-- :memo: `:memo:`
-- :eyes: `:eyes:`
-
-## Maths
-
-> Go to [documentation](https://zensical.org/docs/authoring/math/)
-
-$$
-\cos x=\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k)!}x^{2k}
-$$
-
-!!! warning "Needs configuration"
-Note that MathJax is included via a `script` tag on this page and is not
-configured in the generated default configuration to avoid including it
-in a pages that do not need it. See the documentation for details on how
-to configure it on all your pages if they are more Maths-heavy than these
-simple starter pages.
-
-<script id="MathJax-script" src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>
-  window.MathJax = {
-    tex: {
-      inlineMath: [["\\(", "\\)"]],
-      displayMath: [["\\[", "\\]"]],
-      processEscapes: true,
-      processEnvironments: true
-    },
-    options: {
-      ignoreHtmlClass: ".*|",
-      processHtmlClass: "arithmatex"
-    }
-  };
-
-  document$.subscribe(() => {
-    MathJax.startup.output.clearCache()
-    MathJax.typesetClear()
-    MathJax.texReset()
-    MathJax.typesetPromise()
-  })
-</script>
-
-## Task Lists
-
-> Go to [documentation](https://zensical.org/docs/authoring/lists/#using-task-lists)
-
-- [x] Install Zensical
-- [x] Configure `zensical.toml`
-- [x] Write amazing documentation
-- [ ] Deploy anywhere
-
-## Tooltips
-
-> Go to [documentation](https://zensical.org/docs/authoring/tooltips/)
-
-[Hover me][example]
-
-[example]: https://example.com "I'm a tooltip!"
+- **React 19** with **TypeScript**, built with **Vite**
+- **TanStack Router** for file-based, type-safe routing (each model and mode has its own URL)
+- **TanStack Query** for fetching and caching, with types generated from each API's OpenAPI schema
+- **Carbon Design System** and **ECharts** for UI and plots
+- **Vitest**, **React Testing Library** and **MSW** for tests
+- **ESLint**, **Prettier** and **Husky** pre-commit hooks

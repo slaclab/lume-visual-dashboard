@@ -5,6 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LUME Visual Dashboard</title>
+    <!-- Per-deployment settings (API URLs); must load before the app. -->
+    <script vite-ignore src="%BASE_URL%config.js"></script>
+    <!-- Canopy read key, mounted from a Kubernetes Secret so it stays out of git. -->
+    <script vite-ignore src="%BASE_URL%canopy-key.js"></script>
   </head>
   <body>
     <div id="root"></div>

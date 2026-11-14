@@ -2,10 +2,29 @@
 site_name = "Lume Visual Dashboard"
 site_url = "https://slaclab.github.io/lume-visual-dashboard/"
 site_author = "SLAC National Accelerator Laboratory - EED / Software Applications Group"
-site_description = "Documentation for the Lume Visual Dashboard React project."
+site_description = "Developer and deployment documentation for the LUME Visual Dashboard."
 
 repo_name = "slaclab/lume-visual-dashboard"
 repo_url = "https://github.com/slaclab/lume-visual-dashboard"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = "getting-started.md" },
+  { "Development" = [
+    { "Routing" = "development/routing.md" },
+    { "lume-model-api" = "development/lume-model-api.md" },
+    { "Canopy" = "development/canopy.md" },
+    { "Choosing a stream" = "development/streams.md" },
+    { "Local services" = "development/local-services.md" },
+    { "Documentation" = "development/documentation.md" },
+  ] },
+  { "Deployment" = [
+    { "Kubernetes" = "deployment/kubernetes.md" },
+    { "Canopy in the cluster" = "deployment/canopy.md" },
+    { "Secrets" = "deployment/secrets.md" },
+    { "CI and image builds" = "deployment/ci.md" },
+  ] },
+]
 
 [project.theme]
 language = "en"
