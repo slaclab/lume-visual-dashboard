@@ -9,7 +9,7 @@ import {
   liveStreamUrl,
   normalizeLiveStreamRequest,
   openLiveStream,
-} from '@api/live';
+} from '@api/lume-model/live';
 import type { LiveStreamEvent } from '@api/lume-model/types';
 import { server, TEST_BASE_URL } from '@test/server';
 import { createSseStream, liveFrame } from '@test/utils';

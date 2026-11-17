@@ -8,4 +8,5 @@
 	branch = main
 [submodule "external/swapps-design-system"]
 	path = external/swapps-design-system
-	url = https://github.com/slaclab/swapps-design-system
+	url = https://github.com/MitchellAV/swapps-design-system.git
+	branch = develop

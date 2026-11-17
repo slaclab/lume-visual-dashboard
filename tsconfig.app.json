@@ -23,7 +23,8 @@
       "@hooks/*": ["./src/hooks/*"],
       "@api/*": ["./src/api/*"],
       "@router/*": ["./src/router/*"],
-      "@test/*": ["./src/test/*"]
+      "@test/*": ["./src/test/*"],
+      "@swapps/ui": ["./external/swapps-design-system/packages/ui/src/index.ts"]
     },
 
     /* Linting */

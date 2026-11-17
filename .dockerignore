@@ -20,4 +20,12 @@ compose.yaml
 .env.local
 .env.*.local
 *.log
-external
+# Submodules aren't part of the image, except the @swapps/ui source the app compiles in.
+external/*
+!external/swapps-design-system
+external/swapps-design-system/*
+!external/swapps-design-system/packages
+external/swapps-design-system/packages/*
+!external/swapps-design-system/packages/ui
+external/swapps-design-system/packages/ui/*
+!external/swapps-design-system/packages/ui/src

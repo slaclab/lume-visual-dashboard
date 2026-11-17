@@ -11,7 +11,7 @@ git clone --recurse-submodules https://github.com/slaclab/lume-visual-dashboard.
 cd lume-visual-dashboard
 ```
 
-[lume-model-api](https://github.com/slaclab/lume-model-api) and [Canopy](https://github.com/slaclab/canopy) are git submodules in `external/`. The local API services in `compose.yaml` and `pnpm gen:api` use them. If you cloned without `--recurse-submodules`, fetch them with:
+[lume-model-api](https://github.com/slaclab/lume-model-api) and [Canopy](https://github.com/slaclab/canopy) are git submodules in `external/`. The local API services in `compose.yaml` and `pnpm gen:api` use them. So is the [SWAPPS design system](development/design-system.md), whose `@swapps/ui` source the app compiles, so `pnpm build`, `pnpm dev` and the tests need it checked out. If you cloned without `--recurse-submodules`, fetch them with:
 
 ```sh
 git submodule update --init

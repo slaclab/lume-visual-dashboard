@@ -1,21 +1,23 @@
-import { Theme } from '@carbon/react';
-import { Link, Outlet } from '@tanstack/react-router';
+import { AppHeader, SWAPPSThemeProvider, type SWAPPSThemeConfig } from '@swapps/ui';
+import { Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { RouterLink } from '@components/RouterLink';
+
+const themeConfig: SWAPPSThemeConfig = {
+  appearance: 'dark',
+  branding: { organizationName: 'SLAC' },
+};
 
 function RootLayout() {
   return (
-    <Theme theme="g100">
-      <header>
-        <h1>
-          <Link to="/models">LUME Visual Dashboard</Link>
-        </h1>
-      </header>
-      <main>
+    <SWAPPSThemeProvider config={themeConfig}>
+      <AppHeader appTitle="LUME Visual Dashboard" homeHref="/models" linkAs={RouterLink} />
+      <main id="main-content" className="app-main">
         <Outlet />
       </main>
       {/* Renders nothing outside development. React Query's devtools sit bottom-right. */}
       <TanStackRouterDevtools position="bottom-left" />
-    </Theme>
+    </SWAPPSThemeProvider>
   );
 }
 export default RootLayout;
