@@ -1,16 +1,16 @@
 import { useMemo } from 'react';
-import { isCanopyConfigured } from '../api/canopy/client';
+import { isCanopyConfigured } from '@api/canopy/client';
 import {
   harePvNames,
   snapshotFromHare,
   snapshotFromLiveFrame,
   type ModelStreamSnapshot,
   type ModelStreamSource,
-} from '../api/modelStream';
-import type { ConfigResponse, LiveStreamStatus } from '../api/types';
-import { useHareStream } from './useHare';
-import { useThrottledValue } from './useThrottledValue';
-import { useLiveStream } from './useLiveStream';
+} from '@api/modelStream';
+import type { ConfigResponse, LiveStreamStatus } from '@api/lume-model/types';
+import { useHareStream } from '@hooks/useHare';
+import { useThrottledValue } from '@hooks/useThrottledValue';
+import { useLiveStream } from '@hooks/useLiveStream';
 
 /** How often the shown values may change. Tests may shorten it. */
 export const modelStreamTiming = {

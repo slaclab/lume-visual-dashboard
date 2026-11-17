@@ -1,8 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { lumeQueries, normalizeEvaluateRequest } from '../api/queries';
-import type { EvaluateRequest } from '../api/types';
-import { useDebouncedValue } from './useDebouncedValue';
+import { lumeQueries, normalizeEvaluateRequest } from '@api/lume-model/queries';
+import type { EvaluateRequest } from '@api/lume-model/types';
+import { useDebouncedValue } from '@hooks/useDebouncedValue';
 
 // Thin wrappers over `lumeQueries`. For `select`, suspense or other options, use the
 // factories directly: `useQuery({ ...lumeQueries.config(name), select: (c) => c.screens })`.

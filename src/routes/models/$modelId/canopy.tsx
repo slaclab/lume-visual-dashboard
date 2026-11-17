@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import StreamingPage from '../../../components/StreamingPage';
+import StreamingPage from '@components/pages/test/StreamingPage';
 
 /** Live input and output PVs from Canopy's Hare WebSocket. */
 export const Route = createFileRoute('/models/$modelId/canopy')({

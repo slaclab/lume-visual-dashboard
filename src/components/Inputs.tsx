@@ -1,6 +1,6 @@
-import type { ConfigResponse } from '../api/types';
+import type { ConfigResponse } from '@api/lume-model/types';
 
-import { InputSlider } from './InputSlider';
+import { InputSlider } from '@components/InputSlider';
 
 type InputsProps = {
   inputs: ConfigResponse['inputs'];

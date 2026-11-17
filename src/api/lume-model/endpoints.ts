@@ -1,5 +1,5 @@
-import { fetchJson } from './client';
-import { decodeEvaluateResponse } from './decode';
+import { lumeFetch } from '@api/lume-model/client';
+import { decodeEvaluateResponse } from '@api/lume-model/decode';
 import type {
   ConfigResponse,
   EvaluateRequest,
@@ -7,20 +7,20 @@ import type {
   EvaluateV1WireResponse,
   ModelListEntry,
   SnapshotResponse,
-} from './types';
+} from '@api/lume-model/types';
 
 export const modelPath = (name: string) => `/api/v1/models/${encodeURIComponent(name)}`;
 
 export function getModels(signal?: AbortSignal): Promise<ModelListEntry[]> {
-  return fetchJson('/api/v1/models', { signal });
+  return lumeFetch('/api/v1/models', { signal });
 }
 
 export function getModelConfig(name: string, signal?: AbortSignal): Promise<ConfigResponse> {
-  return fetchJson(`${modelPath(name)}/config`, { signal });
+  return lumeFetch(`${modelPath(name)}/config`, { signal });
 }
 
 export function getMachineSnapshot(name: string, signal?: AbortSignal): Promise<SnapshotResponse> {
-  return fetchJson(`${modelPath(name)}/machine-snapshot`, { signal });
+  return lumeFetch(`${modelPath(name)}/machine-snapshot`, { signal });
 }
 
 export async function evaluateModel(
@@ -28,7 +28,7 @@ export async function evaluateModel(
   request: EvaluateRequest,
   signal?: AbortSignal
 ): Promise<EvaluateResponse> {
-  const wire = await fetchJson<EvaluateV1WireResponse>(`${modelPath(name)}/evaluate`, {
+  const wire = await lumeFetch<EvaluateV1WireResponse>(`${modelPath(name)}/evaluate`, {
     method: 'POST',
     body: request,
     signal,

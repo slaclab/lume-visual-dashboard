@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LumeApiError } from './client';
+import { LumeApiError } from '@api/client';
 import {
   closeAllLiveStreams,
   hasLiveStreamTargets,
@@ -9,10 +9,10 @@ import {
   liveStreamUrl,
   normalizeLiveStreamRequest,
   openLiveStream,
-} from './live';
-import type { LiveStreamEvent } from './types';
-import { server, TEST_BASE_URL } from '../test/server';
-import { createSseStream, liveFrame } from '../test/utils';
+} from '@api/live';
+import type { LiveStreamEvent } from '@api/lume-model/types';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createSseStream, liveFrame } from '@test/utils';
 
 const STREAM_URL = `${TEST_BASE_URL}/api/v1/models/demo/live/stream`;
 

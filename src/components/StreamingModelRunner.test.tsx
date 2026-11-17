@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse, ws } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { closeAllHareStreams, hareStreamTiming } from '../api/canopy/stream';
-import type { HareClientMessage, PVValue } from '../api/canopy/types';
-import { closeAllLiveStreams, liveStreamTiming } from '../api/live';
-import { modelStreamTiming } from '../hooks/useModelStream';
-import type { ConfigResponse } from '../api/types';
-import { server, TEST_BASE_URL } from '../test/server';
-import { createSseStream, liveFrame } from '../test/utils';
-import StreamingModelRunner from './StreamingModelRunner';
+import { closeAllHareStreams, hareStreamTiming } from '@api/canopy/stream';
+import type { HareClientMessage, PVValue } from '@api/canopy/types';
+import { closeAllLiveStreams, liveStreamTiming } from '@api/lume-model/live';
+import { modelStreamTiming } from '@hooks/useModelStream';
+import type { ConfigResponse } from '@api/lume-model/types';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createSseStream, liveFrame } from '@test/utils';
+import StreamingModelRunner from '@components/StreamingModelRunner';
 
 const STREAM_URL = `${TEST_BASE_URL}/api/v1/models/demo/live/stream`;
 

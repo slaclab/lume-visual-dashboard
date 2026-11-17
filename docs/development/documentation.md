@@ -15,7 +15,7 @@ CI builds the site with `zensical build --strict`, so a broken link to another p
 uv run zensical build --clean --strict
 ```
 
-Link to other pages with relative paths to their `.md` files, such as `[Secrets](../deployment/secrets.md)`. Files outside `docs/` aren't part of the site, so refer to them as code (`src/api/live.ts`) or link to them on GitHub.
+Link to other pages with relative paths to their `.md` files, such as `[Secrets](../deployment/secrets.md)`. Files outside `docs/` aren't part of the site, so refer to them as code (`src/api/lume-model/live.ts`) or link to them on GitHub.
 
 The site is published to GitHub Pages on every push to `main`; see [CI and image builds](../deployment/ci.md).
 

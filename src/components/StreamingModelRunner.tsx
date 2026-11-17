@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Pause, Play, Renew } from '@carbon/icons-react';
 import { Button, InlineNotification, Select, SelectItem, Stack, Tag } from '@carbon/react';
 
-import type { ModelStreamSnapshot, ModelStreamSource } from '../api/modelStream';
-import type { ConfigResponse, LiveStreamStatus } from '../api/types';
-import { useModelStream } from '../hooks/useModelStream';
-import LiveInputs from './LiveInputs';
-import ModelSummary from './ModelSummary';
-import Outputs from './Outputs';
-import Panel from './Panel';
+import type { ModelStreamSnapshot, ModelStreamSource } from '@api/modelStream';
+import type { ConfigResponse, LiveStreamStatus } from '@api/lume-model/types';
+import { useModelStream } from '@hooks/useModelStream';
+import LiveInputs from '@components/LiveInputs';
+import ModelSummary from '@components/ModelSummary';
+import Outputs from '@components/Outputs';
+import Panel from '@components/Panel';
 
 type StreamingModelRunnerProps = {
   name?: string;

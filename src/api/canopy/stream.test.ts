@@ -1,15 +1,15 @@
 import { http, HttpResponse, ws } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LumeApiError } from '../client';
+import { LumeApiError } from '@api/client';
 import {
   closeAllHareStreams,
   hareStream,
   hareStreamTiming,
   hareWebSocketUrl,
   normalizePvNames,
-} from './stream';
-import type { HareClientMessage, PVMeta, PVValue } from './types';
-import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '../../test/server';
+} from '@api/canopy/stream';
+import type { HareClientMessage, PVMeta, PVValue } from '@api/canopy/types';
+import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '@test/server';
 
 const WS_URL = 'ws://canopy.test/hare/v1/ws/pvs';
 const hare = ws.link(WS_URL);

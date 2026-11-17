@@ -1,5 +1,5 @@
-import { useModelConfig } from '../hooks/useLumeApi';
-import ModelPageRunner from './ModelPageRunner';
+import { useModelConfig } from '@hooks/useLumeApi';
+import ModelPageRunner from '@components/ModelPageRunner';
 
 type ModelPageProps = {
   name?: string;

@@ -3,10 +3,10 @@ import { createMemoryHistory, RouterProvider } from '@tanstack/react-router';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import type { ConfigResponse } from './api/types';
-import { createAppRouter } from './router';
-import { server, TEST_BASE_URL } from './test/server';
-import { createTestQueryClient } from './test/utils';
+import type { ConfigResponse } from '@api/lume-model/types';
+import { createAppRouter } from '@/router';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createTestQueryClient } from '@test/utils';
 
 const api = (path: string) => `${TEST_BASE_URL}/api/v1${path}`;
 

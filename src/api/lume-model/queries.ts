@@ -1,6 +1,11 @@
 import { queryOptions, skipToken } from '@tanstack/react-query';
-import { evaluateModel, getMachineSnapshot, getModelConfig, getModels } from './endpoints';
-import type { EvaluateRequest } from './types';
+import {
+  evaluateModel,
+  getMachineSnapshot,
+  getModelConfig,
+  getModels,
+} from '@api/lume-model/endpoints';
+import type { EvaluateRequest } from '@api/lume-model/types';
 
 /**
  * Hierarchical query keys, so e.g. `invalidateQueries({ queryKey: lumeKeys.model(name) })`

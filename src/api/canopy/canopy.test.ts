@@ -1,11 +1,11 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { canopyFetch, getCanopyApiKey, getCanopyBaseUrl } from './client';
-import { describePv, getPv } from './endpoints';
-import { hareKeys, hareQueries } from './queries';
-import type { PVValue } from './types';
-import { LumeApiError } from '../client';
-import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '../../test/server';
+import { canopyFetch, getCanopyApiKey, getCanopyBaseUrl } from '@api/canopy/client';
+import { describePv, getPv } from '@api/canopy/endpoints';
+import { hareKeys, hareQueries } from '@api/canopy/queries';
+import type { PVValue } from '@api/canopy/types';
+import { LumeApiError } from '@api/client';
+import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '@test/server';
 
 const value: PVValue = {
   pv: 'pva://TEST:SINE',

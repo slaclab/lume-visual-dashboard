@@ -1,11 +1,16 @@
 # LUME model API
 
 Set `VITE_LUME_API_BASE_URL` (see `.env.example`; copy it to `.env.local`). It defaults to
-`http://localhost:8000`. The data layer is split in three:
+`http://localhost:8000`. The lume-model-api code lives in `src/api/lume-model/`, next to
+`src/api/canopy/`. Code shared by both APIs stays in `src/api/`: `fetchJson` and `LumeApiError`
+(`client.ts`), the SSE parser (`sse.ts`), the TanStack `queryClient`, and `modelStream.ts`, which
+puts frames from either API into one shape.
 
-- `src/api/endpoints.ts`: plain typed fetch functions. Base64 float32 payloads are decoded to
+The data layer is split in three:
+
+- `src/api/lume-model/endpoints.ts`: plain typed fetch functions. Base64 float32 payloads are decoded to
   `Float32Array`.
-- `src/api/queries.ts`: `lumeKeys` and `lumeQueries`, TanStack Query `queryOptions` factories.
+- `src/api/lume-model/queries.ts`: `lumeKeys` and `lumeQueries`, TanStack Query `queryOptions` factories.
   Use them with `useQuery`/`useSuspenseQuery`, or with `queryClient.ensureQueryData` in router
   loaders.
 - `src/hooks/useLumeApi.ts`: the hooks `useModels`, `useModelConfig`, `useMachineSnapshot` and
@@ -24,7 +29,7 @@ response, with `input_sources` set to `live`, or to `baseline` for a PV that cou
 isn't a TanStack Query, because the data is pushed:
 
 - `src/api/sse.ts`: `parseEventStream`, a `text/event-stream` parser over a `fetch` body.
-- `src/api/live.ts`:
+- `src/api/lume-model/live.ts`:
   - `openLiveStream` is one connection, as an async iterable of decoded `frame` and `error`
     events. It uses `fetch` rather than `EventSource`, so a request refused before the stream
     opens throws a `LumeApiError` with the server's `detail`. That covers a bad screen or output

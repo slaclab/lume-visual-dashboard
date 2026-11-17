@@ -2,11 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse, ws } from 'msw';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useHareStream, usePv, usePvMeta, usePvStream } from './useHare';
-import { closeAllHareStreams, hareStreamTiming } from '../api/canopy/stream';
-import type { PVMeta, PVValue } from '../api/canopy/types';
-import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '../test/server';
-import { createWrapper } from '../test/utils';
+import { useHareStream, usePv, usePvMeta, usePvStream } from '@hooks/useHare';
+import { closeAllHareStreams, hareStreamTiming } from '@api/canopy/stream';
+import type { PVMeta, PVValue } from '@api/canopy/types';
+import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, server } from '@test/server';
+import { createWrapper } from '@test/utils';
 
 const pvUrl = `${CANOPY_TEST_BASE_URL}/hare/v1/pvs/:pv`;
 

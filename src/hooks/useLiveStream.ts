@@ -4,8 +4,8 @@ import {
   IDLE_LIVE_STREAM_STATE,
   liveStream,
   normalizeLiveStreamRequest,
-} from '../api/live';
-import type { LiveStreamRequest, LiveStreamState } from '../api/types';
+} from '@api/lume-model/live';
+import type { LiveStreamRequest, LiveStreamState } from '@api/lume-model/types';
 
 export interface UseLiveStreamOptions {
   /** Set `false` to disconnect (e.g. while the view is hidden). Default `true`. */

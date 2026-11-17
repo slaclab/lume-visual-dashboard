@@ -10,7 +10,7 @@ It talks to two backends, both called directly from the browser:
 
 | Backend                                                          | Provides                                                                                     | Code               |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------ |
-| [lume-model-api](https://github.com/slaclab/lume-model-api)      | The model list, each model's config, evaluate, and a live stream of the model run at the machine's current inputs | `src/api/`         |
+| [lume-model-api](https://github.com/slaclab/lume-model-api)      | The model list, each model's config, evaluate, and a live stream of the model run at the machine's current inputs | `src/api/lume-model/` |
 | [Canopy](https://github.com/slaclab/canopy) (its Hare module)    | Live EPICS PV values and metadata over REST and a WebSocket                                  | `src/api/canopy/`  |
 
 Both are git submodules in `external/`, and `compose.yaml` runs them locally with simulated machine data.

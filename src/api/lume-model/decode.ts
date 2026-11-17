@@ -4,7 +4,7 @@ import type {
   InputSource,
   Output,
   WireOutput,
-} from './types';
+} from '@api/lume-model/types';
 
 const IS_LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 

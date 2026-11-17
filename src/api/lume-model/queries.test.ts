@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { hasEvaluateTargets, lumeKeys, lumeQueries, normalizeEvaluateRequest } from './queries';
-import { createQueryClient } from './queryClient';
-import { LumeApiError } from './client';
+import {
+  hasEvaluateTargets,
+  lumeKeys,
+  lumeQueries,
+  normalizeEvaluateRequest,
+} from '@api/lume-model/queries';
+import { createQueryClient } from '@api/queryClient';
+import { LumeApiError } from '@api/client';
 
 describe('lumeKeys', () => {
   it('nests per-model keys under the model key for targeted invalidation', () => {

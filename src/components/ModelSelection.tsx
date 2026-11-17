@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { createLink } from '@tanstack/react-router';
-import { useModels } from '../hooks/useLumeApi';
+import { useModels } from '@hooks/useLumeApi';
 
 /** Carbon-styled link with TanStack Router's typed `to`/`params`. */
 const RouterLink = createLink(CarbonLink);

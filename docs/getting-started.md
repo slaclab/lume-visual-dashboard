@@ -72,5 +72,5 @@ Deployments set these at runtime instead; see [Kubernetes](deployment/kubernetes
 | `pnpm lint:fix`       | Run ESLint with auto-fix                                                                                |
 | `pnpm format`         | Format source files with Prettier                                                                       |
 | `pnpm format:check`   | Check formatting without writing                                                                        |
-| `pnpm gen:api`        | Regenerate `src/api/schema.d.ts` from `external/lume-model-api/openapi.json`                            |
+| `pnpm gen:api`        | Regenerate `src/api/lume-model/schema.d.ts` from `external/lume-model-api/openapi.json`                            |
 | `pnpm gen:canopy-api` | Regenerate `src/api/canopy/schema.d.ts` from the running compose `canopy` service's Hare OpenAPI schema |

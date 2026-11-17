@@ -2,7 +2,7 @@ import { Theme } from '@carbon/react';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import '../App.css';
+import '@/App.css';
 
 /** Available to every route's `beforeLoad`/`loader` as `context`. */
 export interface RouterContext {

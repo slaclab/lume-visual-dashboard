@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { lumeQueries } from '../../api/queries';
-import ModelSelection from '../../components/ModelSelection';
+import { lumeQueries } from '@api/lume-model/queries';
+import ModelSelection from '@components/ModelSelection';
 
 export const Route = createFileRoute('/models/')({
   loader: ({ context: { queryClient } }) =>

@@ -1,5 +1,5 @@
-import { useModelConfig } from '../hooks/useLumeApi';
-import InteractiveModelRunner from './InteractiveModelRunner';
+import { useModelConfig } from '@hooks/useLumeApi';
+import InteractiveModelRunner from '@components/InteractiveModelRunner';
 
 type InteractiveProps = { name?: string };
 

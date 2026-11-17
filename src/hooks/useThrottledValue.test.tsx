@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useThrottledValue } from './useThrottledValue';
+import { useThrottledValue } from '@hooks/useThrottledValue';
 
 beforeEach(() => {
   vi.useFakeTimers();

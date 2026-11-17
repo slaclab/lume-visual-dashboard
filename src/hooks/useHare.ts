@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { hareQueries } from '../api/canopy/queries';
-import { hareStream, IDLE_HARE_STREAM_STATE, normalizePvNames } from '../api/canopy/stream';
-import type { HareConnectionState, HarePvState, HareStreamState } from '../api/canopy/types';
+import { hareQueries } from '@api/canopy/queries';
+import { hareStream, IDLE_HARE_STREAM_STATE, normalizePvNames } from '@api/canopy/stream';
+import type { HareConnectionState, HarePvState, HareStreamState } from '@api/canopy/types';
 
 // Thin wrappers over `hareQueries`; use the factories directly for `select`, suspense, etc.
 

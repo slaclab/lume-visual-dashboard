@@ -1,5 +1,11 @@
-import type { HarePvState } from './canopy/types';
-import type { ConfigResponse, EvaluateResponse, InputSource, Output, ScalarOutput } from './types';
+import type { HarePvState } from '@api/canopy/types';
+import type {
+  ConfigResponse,
+  EvaluateResponse,
+  InputSource,
+  Output,
+  ScalarOutput,
+} from '@api/lume-model/types';
 
 /** Where a streaming page gets its values: lume-model-api's live stream, or Canopy's Hare. */
 export type ModelStreamSource = 'lume' | 'canopy';
