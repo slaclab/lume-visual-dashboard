@@ -1,12 +1,12 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, RouterProvider } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import type { ConfigResponse } from './api/types';
-import { createAppRouter } from './router';
-import { server, TEST_BASE_URL } from './test/server';
-import { createTestQueryClient } from './test/utils';
+import type { ConfigResponse } from '@api/lume-model/types';
+import { createAppRouter } from '@/router';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createTestQueryClient } from '@test/utils';
 
 const api = (path: string) => `${TEST_BASE_URL}/api/v1${path}`;
 
@@ -43,6 +43,23 @@ describe('routes', () => {
     const link = await screen.findByRole('link', { name: 'demo' });
     expect(router.state.location.pathname).toBe('/models');
     expect(link.getAttribute('href')).toBe('/models/demo');
+  });
+
+  it('renders the SWAPPS header, whose title navigates client-side to the model list', async () => {
+    server.use(
+      http.get(api('/models'), () => HttpResponse.json([])),
+      http.get(api('/models/demo/config'), () => HttpResponse.json(config))
+    );
+    const router = renderAt('/models/demo');
+    await screen.findByText('Demo model');
+    const banner = screen.getByRole('banner', { name: 'SLAC LUME Visual Dashboard' });
+    const home = within(banner).getByRole('link', { name: /LUME Visual Dashboard/ });
+    expect(home.getAttribute('href')).toBe('/models');
+    expect(screen.getByRole('main').id).toBe('main-content');
+
+    fireEvent.click(home);
+    await screen.findByRole('heading', { name: 'Models' });
+    expect(router.state.location.pathname).toBe('/models');
   });
 
   it('shows the model config at the model URL', async () => {

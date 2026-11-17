@@ -9,8 +9,8 @@ import {
   Tag,
 } from '@carbon/react';
 
-import type { InputValueSource, ModelStreamSnapshot } from '../api/modelStream';
-import type { InputInfo } from '../api/types';
+import type { InputValueSource, ModelStreamSnapshot } from '@api/modelStream';
+import type { InputInfo } from '@api/lume-model/types';
 
 type LiveInputsProps = {
   inputs: InputInfo[];

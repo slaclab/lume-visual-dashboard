@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { LumeApiError } from './client';
+import { LumeApiError } from '@api/client';
 
 const MAX_RETRIES = 2;
 

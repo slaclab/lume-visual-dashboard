@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import StreamingPage from '../../../components/StreamingPage';
+import StreamingPage from '@components/pages/test/StreamingPage';
 
 /** Live model evaluations from lume-model-api's live stream. */
 export const Route = createFileRoute('/models/$modelId/streaming')({

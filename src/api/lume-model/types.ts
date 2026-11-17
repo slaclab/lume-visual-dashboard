@@ -1,4 +1,4 @@
-import type { components } from './schema';
+import type { components } from '@api/lume-model/schema';
 
 type Schemas = components['schemas'];
 

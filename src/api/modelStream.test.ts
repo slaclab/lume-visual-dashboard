@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { HarePvState, PVValue } from './canopy/types';
-import { harePvNames, snapshotFromHare, snapshotFromLiveFrame } from './modelStream';
-import type { ConfigResponse, EvaluateResponse } from './types';
+import type { HarePvState, PVValue } from '@api/canopy/types';
+import { harePvNames, snapshotFromHare, snapshotFromLiveFrame } from '@api/modelStream';
+import type { ConfigResponse, EvaluateResponse } from '@api/lume-model/types';
 
 const config: ConfigResponse = {
   model: 'demo',

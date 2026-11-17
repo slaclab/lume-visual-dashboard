@@ -16,13 +16,15 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepare": "husky",
-    "gen:api": "openapi-typescript external/lume-model-api/openapi.json -o src/api/schema.d.ts && prettier --write src/api/schema.d.ts",
+    "gen:api": "openapi-typescript external/lume-model-api/openapi.json -o src/api/lume-model/schema.d.ts && prettier --write src/api/lume-model/schema.d.ts",
     "gen:canopy-api": "openapi-typescript http://localhost:8050/hare/openapi.json -o src/api/canopy/schema.d.ts && prettier --write src/api/canopy/schema.d.ts"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.92.0",
     "@carbon/react": "^1.120.0",
     "@carbon/styles": "^1.119.0",
+    "@dnd-kit/helpers": "^0.5.3",
+    "@dnd-kit/react": "^0.5.3",
     "@tanstack/react-query": "^5.107.1",
     "@tanstack/react-router": "^1.170.46",
     "echarts": "^6.1.0",
@@ -58,7 +60,7 @@
     "vite": "^8.3.8",
     "vitest": "^4.1.12"
   },
-  "packageManager": "pnpm@12.16.1",
+  "packageManager": "pnpm@12.21.0",
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
       "eslint --fix",

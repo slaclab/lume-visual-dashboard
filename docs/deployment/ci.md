@@ -10,9 +10,11 @@ These GitHub Actions workflows run on pull requests to `main` and pushes to `mai
 | **Test**                         | `test.yml`        | The Vitest suite                                                                                                              |
 | **Build & Deploy Documentation** | `gh-pages.yml`    | Builds this site with `zensical build --strict` on pull requests that touch the docs, and publishes it to GitHub Pages from `main` |
 
+Check and Test first check out the `external/swapps-design-system` submodule (only that one), because the app compiles `@swapps/ui` from its source; see [Design system](../development/design-system.md).
+
 ## Image builds
 
-The **Update Docker Image** workflow (`update-image.yaml`) builds `Dockerfile.prod` and pushes it to `ghcr.io/slaclab/lume-visual-dashboard`. It runs on every push to `main` or `staging`, except pushes that only change `deploy/`, `docs/`, or Markdown.
+The **Update Docker Image** workflow (`update-image.yaml`) checks out the `external/swapps-design-system` submodule, then builds `Dockerfile.prod` and pushes it to `ghcr.io/slaclab/lume-visual-dashboard`. It runs on every push to `main` or `staging`, except pushes that only change `deploy/`, `docs/`, or Markdown.
 
 Each build is tagged with the 7-character commit SHA. The workflow then commits two tags to the matching overlay (`main` → `overlays/prod`, `staging` → `overlays/staging`) on the same branch:
 

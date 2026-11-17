@@ -9,8 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import type { ConfigResponse, InputInfo, OutputInfo } from '../api/types';
-import ModelSummary from './ModelSummary';
+import type { ConfigResponse, InputInfo, OutputInfo } from '@api/lume-model/types';
+import ModelSummary from '@components/ModelSummary';
 
 type ModelPageRunnerProps = {
   config: ConfigResponse;

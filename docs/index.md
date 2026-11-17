@@ -10,7 +10,7 @@ It talks to two backends, both called directly from the browser:
 
 | Backend                                                          | Provides                                                                                     | Code               |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------ |
-| [lume-model-api](https://github.com/slaclab/lume-model-api)      | The model list, each model's config, evaluate, and a live stream of the model run at the machine's current inputs | `src/api/`         |
+| [lume-model-api](https://github.com/slaclab/lume-model-api)      | The model list, each model's config, evaluate, and a live stream of the model run at the machine's current inputs | `src/api/lume-model/` |
 | [Canopy](https://github.com/slaclab/canopy) (its Hare module)    | Live EPICS PV values and metadata over REST and a WebSocket                                  | `src/api/canopy/`  |
 
 Both are git submodules in `external/`, and `compose.yaml` runs them locally with simulated machine data.
@@ -20,6 +20,7 @@ Both are git submodules in `external/`, and `compose.yaml` runs them locally wit
 - **New to the project:** [Getting started](getting-started.md) covers cloning, installing, running everything locally, and the `pnpm` commands.
 - **Working on the app:**
     - [Routing](development/routing.md): URLs, route files, and adding a mode.
+    - [Design system](development/design-system.md): the `@swapps/ui` app shell, and how it's built from the submodule.
     - [lume-model-api](development/lume-model-api.md) and [Canopy](development/canopy.md): the data layers, hooks, and live streams.
     - [Choosing a stream](development/streams.md): which stream a view should use.
     - [Local services](development/local-services.md): the Docker Compose services, and reading from a real IOC.
@@ -34,6 +35,6 @@ Both are git submodules in `external/`, and `compose.yaml` runs them locally wit
 - **React 19** with **TypeScript**, built with **Vite**
 - **TanStack Router** for file-based, type-safe routing (each model and mode has its own URL)
 - **TanStack Query** for fetching and caching, with types generated from each API's OpenAPI schema
-- **Carbon Design System** and **ECharts** for UI and plots
+- **SWAPPS design system** (`@swapps/ui`, built on **Carbon**) and **ECharts** for UI and plots
 - **Vitest**, **React Testing Library** and **MSW** for tests
 - **ESLint**, **Prettier** and **Husky** pre-commit hooks

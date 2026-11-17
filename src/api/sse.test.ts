@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseEventStream, type ParseEventStreamOptions, type ServerSentEvent } from './sse';
+import { parseEventStream, type ParseEventStreamOptions, type ServerSentEvent } from '@api/sse';
 
 function streamOf(...chunks: (string | Uint8Array)[]) {
   const encoder = new TextEncoder();

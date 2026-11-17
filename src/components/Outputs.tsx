@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@carbon/react';
 
-import type { EvaluateResponse, Output } from '../api/types';
+import type { EvaluateResponse, Output } from '@api/lume-model/types';
 
 type OutputsProps = {
   outputs: EvaluateResponse['outputs'] | undefined;

@@ -2,11 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { closeAllLiveStreams, liveStreamTiming } from '../api/live';
-import type { LiveStreamRequest } from '../api/types';
-import { server, TEST_BASE_URL } from '../test/server';
-import { createSseStream, liveFrame } from '../test/utils';
-import { useLiveStream } from './useLiveStream';
+import { closeAllLiveStreams, liveStreamTiming } from '@api/lume-model/live';
+import type { LiveStreamRequest } from '@api/lume-model/types';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createSseStream, liveFrame } from '@test/utils';
+import { useLiveStream } from '@hooks/useLiveStream';
 
 const STREAM_URL = `${TEST_BASE_URL}/api/v1/models/demo/live/stream`;
 

@@ -1,5 +1,5 @@
 import { queryOptions, skipToken } from '@tanstack/react-query';
-import { describePv, getPv } from './endpoints';
+import { describePv, getPv } from '@api/canopy/endpoints';
 
 /** Hierarchical keys, so `invalidateQueries({ queryKey: hareKeys.pv(name) })` hits one PV. */
 export const hareKeys = {

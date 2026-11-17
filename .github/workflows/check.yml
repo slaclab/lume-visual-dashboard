@@ -12,3 +12,6 @@ on:
 jobs:
   check:
     uses: slaclab/swapps-ci-helpers/.github/workflows/js-check.yml@fa01cd93bc7d649a955e2a280b272c8496ea1ce1
+    with:
+      # @swapps/ui is compiled from this submodule's source; the rest is the helper's default.
+      check-command: git submodule update --init --depth 1 external/swapps-design-system && pnpm lint && pnpm format:check && pnpm exec tsc -b

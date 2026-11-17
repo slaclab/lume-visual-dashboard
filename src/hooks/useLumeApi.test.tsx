@@ -1,10 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { useEvaluate, useMachineSnapshot, useModelConfig, useModels } from './useLumeApi';
-import type { ConfigResponse, EvaluateRequest, EvaluateV1WireResponse } from '../api/types';
-import { server, TEST_BASE_URL } from '../test/server';
-import { createWrapper, encodeFloat32 } from '../test/utils';
+import { useEvaluate, useMachineSnapshot, useModelConfig, useModels } from '@hooks/useLumeApi';
+import type {
+  ConfigResponse,
+  EvaluateRequest,
+  EvaluateV1WireResponse,
+} from '@api/lume-model/types';
+import { server, TEST_BASE_URL } from '@test/server';
+import { createWrapper, encodeFloat32 } from '@test/utils';
 
 const api = (path: string) => `${TEST_BASE_URL}/api/v1${path}`;
 

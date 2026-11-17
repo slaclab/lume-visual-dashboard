@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { decodeEvaluateResponse, decodeFloat32 } from './decode';
-import type { EvaluateV1WireResponse } from './types';
-import { encodeFloat32 } from '../test/utils';
+import { decodeEvaluateResponse, decodeFloat32 } from '@api/lume-model/decode';
+import type { EvaluateV1WireResponse } from '@api/lume-model/types';
+import { encodeFloat32 } from '@test/utils';
 
 describe('decodeFloat32', () => {
   it('decodes base64 little-endian float32', () => {

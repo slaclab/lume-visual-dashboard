@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router';
-import { LumeApiError } from '../../api/client';
-import { lumeQueries } from '../../api/queries';
+import { LumeApiError } from '@api/client';
+import { lumeQueries } from '@api/lume-model/queries';
 
 /** Layout shared by every mode of a model: `/models/:modelId/*`. */
 export const Route = createFileRoute('/models/$modelId')({

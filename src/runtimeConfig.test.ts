@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getCanopyApiKey, getCanopyBaseUrl, isCanopyConfigured } from './api/canopy/client';
-import { getBaseUrl } from './api/client';
-import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, TEST_BASE_URL } from './test/server';
+import { getCanopyApiKey, getCanopyBaseUrl, isCanopyConfigured } from '@api/canopy/client';
+import { getLumeBaseUrl } from '@api/lume-model/client';
+import { CANOPY_TEST_API_KEY, CANOPY_TEST_BASE_URL, TEST_BASE_URL } from '@test/server';
 
 afterEach(() => {
   delete window.__LUME_DASHBOARD_CONFIG__;
@@ -10,7 +10,7 @@ afterEach(() => {
 describe('runtime config', () => {
   it('falls back to the VITE_* variables when config.js sets nothing', () => {
     window.__LUME_DASHBOARD_CONFIG__ = {};
-    expect(getBaseUrl()).toBe(TEST_BASE_URL);
+    expect(getLumeBaseUrl()).toBe(TEST_BASE_URL);
     expect(getCanopyBaseUrl()).toBe(CANOPY_TEST_BASE_URL);
     expect(getCanopyApiKey()).toBe(CANOPY_TEST_API_KEY);
     expect(isCanopyConfigured()).toBe(true);
@@ -22,7 +22,7 @@ describe('runtime config', () => {
       canopyApiBaseUrl: 'https://host/canopy',
       canopyApiKey: 'read-only',
     };
-    expect(getBaseUrl()).toBe('https://host/lume-model-api');
+    expect(getLumeBaseUrl()).toBe('https://host/lume-model-api');
     expect(getCanopyBaseUrl()).toBe('https://host/canopy');
     expect(getCanopyApiKey()).toBe('read-only');
   });

@@ -1,5 +1,5 @@
-import { getRuntimeConfig } from '../../runtimeConfig';
-import { fetchJson, type RequestOptions } from '../client';
+import { getRuntimeConfig } from '@/runtimeConfig';
+import { fetchJson, type RequestOptions } from '@api/client';
 
 const DEFAULT_BASE_URL = 'http://localhost:8050';
 const DEFAULT_API_KEY = 'dev';

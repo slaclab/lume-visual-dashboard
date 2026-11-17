@@ -1,13 +1,14 @@
-import { getBaseUrl, LumeApiError } from './client';
-import { decodeEvaluateResponse } from './decode';
-import { modelPath } from './endpoints';
-import { parseEventStream } from './sse';
+import { LumeApiError } from '@api/client';
+import { getLumeBaseUrl } from '@api/lume-model/client';
+import { decodeEvaluateResponse } from '@api/lume-model/decode';
+import { modelPath } from '@api/lume-model/endpoints';
+import { parseEventStream } from '@api/sse';
 import type {
   EvaluateV1WireResponse,
   LiveStreamEvent,
   LiveStreamRequest,
   LiveStreamState,
-} from './types';
+} from '@api/lume-model/types';
 
 /**
  * Equivalent requests (reordered or duplicate outputs, an empty screen) map to one shared
@@ -30,7 +31,7 @@ export function liveStreamUrl(name: string, request: LiveStreamRequest): string 
   if (screen) params.set('screen', screen);
   if (outputs?.length) params.set('outputs', outputs.join(','));
   const query = params.toString();
-  return `${getBaseUrl()}${modelPath(name)}/live/stream${query ? `?${query}` : ''}`;
+  return `${getLumeBaseUrl()}${modelPath(name)}/live/stream${query ? `?${query}` : ''}`;
 }
 
 export interface OpenLiveStreamOptions {

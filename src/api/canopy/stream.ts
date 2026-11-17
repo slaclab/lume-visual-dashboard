@@ -1,12 +1,12 @@
-import { fetchJson, LumeApiError } from '../client';
-import { getCanopyApiKey, getCanopyBaseUrl } from './client';
+import { fetchJson, LumeApiError } from '@api/client';
+import { getCanopyApiKey, getCanopyBaseUrl } from '@api/canopy/client';
 import type {
   HareClientMessage,
   HareConnectionState,
   HarePvState,
   HareServerMessage,
   HareStreamState,
-} from './types';
+} from '@api/canopy/types';
 
 /**
  * `ws(s)://…/hare/v1/ws/pvs?api_key=…`. Browsers can't set headers on a WebSocket handshake,

@@ -12,3 +12,6 @@ on:
 jobs:
   test:
     uses: slaclab/swapps-ci-helpers/.github/workflows/js-test.yml@fa01cd93bc7d649a955e2a280b272c8496ea1ce1
+    with:
+      # @swapps/ui is compiled from this submodule's source.
+      test-command: git submodule update --init --depth 1 external/swapps-design-system && pnpm test

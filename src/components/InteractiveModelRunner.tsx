@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { InlineNotification, Select, SelectItem, Stack } from '@carbon/react';
 
-import type { ConfigResponse } from '../api/types';
-import { useEvaluate } from '../hooks/useLumeApi';
-import Inputs from './Inputs';
-import ModelSummary from './ModelSummary';
-import Outputs from './Outputs';
-import Panel from './Panel';
+import type { ConfigResponse } from '@api/lume-model/types';
+import { useEvaluate } from '@hooks/useLumeApi';
+import Inputs from '@components/Inputs';
+import ModelSummary from '@components/ModelSummary';
+import Outputs from '@components/Outputs';
+import Panel from '@components/Panel';
 
 type ModelRunnerProps = {
   name?: string;

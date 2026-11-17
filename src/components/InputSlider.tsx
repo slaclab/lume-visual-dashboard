@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { Slider } from '@carbon/react';
 
-import type { InputInfo } from '../api/types';
+import type { InputInfo } from '@api/lume-model/types';
 
 type InputSliderProps = {
   input: InputInfo;

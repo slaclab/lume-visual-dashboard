@@ -12,6 +12,7 @@ nav = [
   { "Getting started" = "getting-started.md" },
   { "Development" = [
     { "Routing" = "development/routing.md" },
+    { "Design system" = "development/design-system.md" },
     { "lume-model-api" = "development/lume-model-api.md" },
     { "Canopy" = "development/canopy.md" },
     { "Choosing a stream" = "development/streams.md" },

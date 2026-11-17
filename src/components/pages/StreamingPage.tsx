@@ -1,6 +1,6 @@
-import type { ModelStreamSource } from '../api/modelStream';
-import { useModelConfig } from '../hooks/useLumeApi';
-import StreamingModelRunner from './StreamingModelRunner';
+import type { ModelStreamSource } from '@api/modelStream';
+import { useModelConfig } from '@hooks/useLumeApi';
+import StreamingModelRunner from '@components/StreamingModelRunner';
 
 type StreamingPageProps = { name?: string; source: ModelStreamSource };
 

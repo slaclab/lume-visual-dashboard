@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { createRouter, type RouterHistory } from '@tanstack/react-router';
-import { routeTree } from './routeTree.gen';
+import { routeTree } from '@/routeTree.gen';
 
 export interface CreateAppRouterOptions {
   /** Defaults to browser history; tests pass `createMemoryHistory(...)`. */

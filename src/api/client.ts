@@ -1,15 +1,3 @@
-import { getRuntimeConfig } from '../runtimeConfig';
-
-const DEFAULT_BASE_URL = 'http://localhost:8000';
-
-export function getBaseUrl(): string {
-  return (
-    getRuntimeConfig().lumeApiBaseUrl ||
-    import.meta.env.VITE_LUME_API_BASE_URL ||
-    DEFAULT_BASE_URL
-  ).replace(/\/+$/, '');
-}
-
 export class LumeApiError extends Error {
   readonly status: number;
   readonly body: unknown;
@@ -67,13 +55,13 @@ export interface RequestOptions {
   method?: 'GET' | 'POST';
   body?: unknown;
   signal?: AbortSignal;
-  /** Overrides the lume-model-api base URL, e.g. to call Canopy. */
-  baseUrl?: string;
+  /** The API's origin (plus any path prefix) that `path` is appended to. */
+  baseUrl: string;
   headers?: Record<string, string>;
 }
 
-export async function fetchJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, signal, baseUrl = getBaseUrl(), headers } = options;
+export async function fetchJson<T>(path: string, options: RequestOptions): Promise<T> {
+  const { method = 'GET', body, signal, baseUrl, headers } = options;
   const url = `${baseUrl}${path}`;
 
   const response = await fetch(url, {

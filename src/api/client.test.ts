@@ -1,13 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { fetchJson, getBaseUrl, LumeApiError, parseRetryAfter } from './client';
-import { server, TEST_BASE_URL } from '../test/server';
+import { fetchJson, LumeApiError, parseRetryAfter } from '@api/client';
+import { server, TEST_BASE_URL } from '@test/server';
 
 describe('fetchJson', () => {
-  it('uses the configured base URL', () => {
-    expect(getBaseUrl()).toBe(TEST_BASE_URL);
-  });
-
   it('returns parsed JSON and sends a JSON body', async () => {
     server.use(
       http.post(`${TEST_BASE_URL}/echo`, async ({ request }) => {
@@ -15,7 +11,9 @@ describe('fetchJson', () => {
         return HttpResponse.json({ received: await request.json() });
       })
     );
-    await expect(fetchJson('/echo', { method: 'POST', body: { a: 1 } })).resolves.toEqual({
+    await expect(
+      fetchJson('/echo', { method: 'POST', body: { a: 1 }, baseUrl: TEST_BASE_URL })
+    ).resolves.toEqual({
       received: { a: 1 },
     });
   });
@@ -26,7 +24,7 @@ describe('fetchJson', () => {
         HttpResponse.json({ detail: 'unknown output id' }, { status: 400 })
       )
     );
-    const error = await fetchJson('/bad').catch((e: unknown) => e);
+    const error = await fetchJson('/bad', { baseUrl: TEST_BASE_URL }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(LumeApiError);
     expect(error).toMatchObject({ status: 400, isClientError: true });
     expect((error as LumeApiError).message).toBe('400: unknown output id');
@@ -43,16 +41,18 @@ describe('fetchJson', () => {
         )
       )
     );
-    await expect(fetchJson('/invalid', { method: 'POST', body: {} })).rejects.toThrow(
-      '422: too big; not finite'
-    );
+    await expect(
+      fetchJson('/invalid', { method: 'POST', body: {}, baseUrl: TEST_BASE_URL })
+    ).rejects.toThrow('422: too big; not finite');
   });
 
   it('keeps non-JSON error bodies and marks 503 as retryable', async () => {
     server.use(
       http.get(`${TEST_BASE_URL}/busy`, () => new HttpResponse('Service busy', { status: 503 }))
     );
-    const error = (await fetchJson('/busy').catch((e: unknown) => e)) as LumeApiError;
+    const error = (await fetchJson('/busy', { baseUrl: TEST_BASE_URL }).catch(
+      (e: unknown) => e
+    )) as LumeApiError;
     expect(error.body).toBe('Service busy');
     expect(error.isClientError).toBe(false);
     expect(error.hasDetail).toBe(false);
@@ -68,9 +68,11 @@ describe('fetchJson', () => {
         )
       )
     );
-    const error = (await fetchJson('/full', { method: 'POST', body: {} }).catch(
-      (e: unknown) => e
-    )) as LumeApiError;
+    const error = (await fetchJson('/full', {
+      method: 'POST',
+      body: {},
+      baseUrl: TEST_BASE_URL,
+    }).catch((e: unknown) => e)) as LumeApiError;
     expect(error.retryAfterMs).toBe(2000);
     expect(error.hasDetail).toBe(true);
   });

@@ -5,7 +5,7 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import type { ConfigResponse } from '../api/types';
+import type { ConfigResponse } from '@api/lume-model/types';
 
 type ModelSummaryProps = {
   config: Pick<ConfigResponse, 'model' | 'version' | 'description'>;
