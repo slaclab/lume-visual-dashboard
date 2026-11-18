@@ -1,8 +1,8 @@
-import { useParams } from '@tanstack/react-router';
-import StreamingMode from '@/components/test/StreamingMode';
+// import { useParams } from '@tanstack/react-router';
+import DragDropContainer from '@components/DragDropContainer';
 
 function StreamingPage() {
-  const { modelId } = useParams({ from: '/models/$modelId/streaming' });
-  return <StreamingMode name={modelId} source="lume" />;
+  // const { modelId } = useParams({ from: '/models/$modelId/streaming' });
+  return <DragDropContainer />;
 }
 export default StreamingPage;
