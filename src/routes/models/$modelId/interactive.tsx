@@ -1,11 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import InteractivePage from '@components/pages/test/InteractivePage';
+import InteractivePage from '@pages/InteractivePage';
 
 export const Route = createFileRoute('/models/$modelId/interactive')({
-  component: InteractiveMode,
+  component: InteractivePage,
 });
-
-function InteractiveMode() {
-  const { modelId } = Route.useParams();
-  return <InteractivePage name={modelId} />;
-}

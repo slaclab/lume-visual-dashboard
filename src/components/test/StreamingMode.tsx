@@ -1,10 +1,10 @@
 import type { ModelStreamSource } from '@api/modelStream';
 import { useModelConfig } from '@hooks/useLumeApi';
-import StreamingModelRunner from '@components/StreamingModelRunner';
+import StreamingModelRunner from '@components/test/StreamingModelRunner';
 
-type StreamingPageProps = { name?: string; source: ModelStreamSource };
+type StreamingModeProps = { name?: string; source: ModelStreamSource };
 
-const StreamingPage = ({ name, source }: StreamingPageProps) => {
+const StreamingMode = ({ name, source }: StreamingModeProps) => {
   const { data: modelConfig, isPending, isError, error } = useModelConfig(name);
 
   if (isPending) {
@@ -26,4 +26,4 @@ const StreamingPage = ({ name, source }: StreamingPageProps) => {
   );
 };
 
-export default StreamingPage;
+export default StreamingMode;

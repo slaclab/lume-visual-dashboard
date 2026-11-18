@@ -19,7 +19,7 @@ const RouterLink = createLink(CarbonLink);
 const HEADERS = ['Model', 'Version', 'Description'];
 const TITLE = 'Models';
 
-const ModelSelection = () => {
+const ModelsIndexPage = () => {
   const { data: models, isPending, isError, error } = useModels();
 
   if (isPending) {
@@ -81,4 +81,4 @@ const ModelSelection = () => {
   );
 };
 
-export default ModelSelection;
+export default ModelsIndexPage;

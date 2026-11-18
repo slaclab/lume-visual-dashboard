@@ -1,12 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import StreamingPage from '@components/pages/test/StreamingPage';
+import CanopyStreamingPage from '@pages/CanopyStreamingPage';
 
 /** Live input and output PVs from Canopy's Hare WebSocket. */
 export const Route = createFileRoute('/models/$modelId/canopy')({
-  component: CanopyMode,
+  component: CanopyStreamingPage,
 });
-
-function CanopyMode() {
-  const { modelId } = Route.useParams();
-  return <StreamingPage name={modelId} source="canopy" />;
-}
