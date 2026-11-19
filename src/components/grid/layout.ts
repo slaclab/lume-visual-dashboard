@@ -134,3 +134,37 @@ export function addItem(items: GridItems, id: string, cell: Cell): GridItems {
   const item: GridItem = { id, ...cell, rowSpan: 1, colSpan: 1 };
   return isFree(items, item) ? { ...items, [id]: item } : items;
 }
+
+export type Side = 'top' | 'bottom' | 'left' | 'right';
+
+export const SIDES: Side[] = ['top', 'bottom', 'left', 'right'];
+
+const shiftAll = (items: GridItems, dRow: number, dCol: number): GridItems =>
+  Object.fromEntries(
+    Object.values(items).map((item) => [
+      item.id,
+      { ...item, row: item.row + dRow, col: item.col + dCol },
+    ])
+  );
+
+/** Adds a row/column on `side`; items shift so they stay in place relative to each other. */
+export function insertLine(items: GridItems, side: Side): GridItems {
+  if (side === 'top') return shiftAll(items, 1, 0);
+  if (side === 'left') return shiftAll(items, 0, 1);
+  return items;
+}
+
+/** Removes the row/column on `side`; only valid when `isLineEmpty` is true. */
+export function removeLine(items: GridItems, side: Side): GridItems {
+  if (side === 'top') return shiftAll(items, -1, 0);
+  if (side === 'left') return shiftAll(items, 0, -1);
+  return items;
+}
+
+export function isLineEmpty(items: GridItems, side: Side, rows: number, cols: number): boolean {
+  const line: GridItem =
+    side === 'top' || side === 'bottom'
+      ? { id: '', row: side === 'top' ? 0 : rows - 1, col: 0, rowSpan: 1, colSpan: cols }
+      : { id: '', row: 0, col: side === 'left' ? 0 : cols - 1, rowSpan: rows, colSpan: 1 };
+  return Object.values(items).every((item) => !overlaps(item, line));
+}
