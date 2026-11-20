@@ -33,33 +33,35 @@ function renderAt(path: string) {
 }
 
 describe('routes', () => {
-  it('redirects / to the model list, which links to each model', async () => {
+  it('renders the drag-and-drop dashboard at /', async () => {
+    const router = renderAt('/');
+    await screen.findByRole('heading', { name: 'Drag and Drop Area' });
+    expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('lists the models at /models, linking to each model', async () => {
     server.use(
       http.get(api('/models'), () =>
         HttpResponse.json([{ name: 'demo', version: '1', description: '' }])
       )
     );
-    const router = renderAt('/');
+    renderAt('/models');
     const link = await screen.findByRole('link', { name: 'demo' });
-    expect(router.state.location.pathname).toBe('/models');
     expect(link.getAttribute('href')).toBe('/models/demo');
   });
 
-  it('renders the SWAPPS header, whose title navigates client-side to the model list', async () => {
-    server.use(
-      http.get(api('/models'), () => HttpResponse.json([])),
-      http.get(api('/models/demo/config'), () => HttpResponse.json(config))
-    );
+  it('renders the SWAPPS header, whose title navigates client-side to the dashboard', async () => {
+    server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
     const router = renderAt('/models/demo');
     await screen.findByText('Demo model');
     const banner = screen.getByRole('banner', { name: 'SLAC LUME Visual Dashboard' });
     const home = within(banner).getByRole('link', { name: /LUME Visual Dashboard/ });
-    expect(home.getAttribute('href')).toBe('/models');
+    expect(home.getAttribute('href')).toBe('/');
     expect(screen.getByRole('main').id).toBe('main-content');
 
     fireEvent.click(home);
-    await screen.findByRole('heading', { name: 'Models' });
-    expect(router.state.location.pathname).toBe('/models');
+    await screen.findByRole('heading', { name: 'Drag and Drop Area' });
+    expect(router.state.location.pathname).toBe('/');
   });
 
   it('shows the model config at the model URL', async () => {
