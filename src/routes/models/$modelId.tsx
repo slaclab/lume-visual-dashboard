@@ -11,6 +11,7 @@ export const Route = createFileRoute('/models/$modelId')({
     navigation: [
       navItem('Home', { to: '/' }),
       navItem('Models', { to: '/models' }),
+      navItem('Overview', { to: '/models/$modelId', params: { modelId } }),
       navItem('Interactive', { to: '/models/$modelId/interactive', params: { modelId } }),
       navItem('Streaming', { to: '/models/$modelId/streaming', params: { modelId } }),
       navItem('Canopy', { to: '/models/$modelId/canopy', params: { modelId } }),
