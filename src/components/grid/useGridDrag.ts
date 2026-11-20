@@ -14,7 +14,9 @@ type DragHandlers = Pick<
  * Move and resize behaviour for the grid. Returns handlers for `DragDropProvider` plus the live
  * state needed to render the drag: the widget being resized and where things will snap to.
  */
-export function useGridDrag(layout: GridLayout, gridRef: RefObject<HTMLElement | null>) {
+type DragLayout = Pick<GridLayout, 'items' | 'rows' | 'cols' | 'moveItem' | 'replaceItem'>;
+
+export function useGridDrag(layout: DragLayout, gridRef: RefObject<HTMLElement | null>) {
   const { items, rows, cols } = layout;
 
   const [resizing, setResizing] = useState<ResizeState | null>(null);

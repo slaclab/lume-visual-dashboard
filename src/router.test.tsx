@@ -79,6 +79,21 @@ describe('routes', () => {
     expect(screen.getByRole('link', { name: 'Streaming' }).dataset.status).toBe('active');
   });
 
+  it('shows model modes in the header, marking only the current page active', async () => {
+    server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
+    renderAt('/models/demo/canopy');
+    await screen.findByRole('heading', { name: 'Live PVs (Canopy Hare)' });
+    const header = screen.getByRole('navigation', { name: 'Main navigation' });
+    const active = within(header)
+      .getAllByRole('link')
+      .filter((link) => link.dataset.status === 'active')
+      .map((link) => link.textContent);
+    expect(active).toEqual(['Canopy']);
+    expect(within(header).getByRole('link', { name: 'Interactive' }).getAttribute('href')).toBe(
+      '/models/demo/interactive'
+    );
+  });
+
   it('renders Canopy mode at its own URL', async () => {
     server.use(http.get(api('/models/demo/config'), () => HttpResponse.json(config)));
     renderAt('/models/demo/canopy');
@@ -97,5 +112,8 @@ describe('routes', () => {
     renderAt('/models/missing/interactive');
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Model “missing” was not found.');
+    // The unknown model's modes aren't offered; the header falls back to the main links
+    expect(screen.queryByRole('link', { name: 'Interactive' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Models' })).toBeTruthy();
   });
 });

@@ -1,6 +1,7 @@
 import { Close } from '@carbon/icons-react';
 import { useDraggable } from '@dnd-kit/react';
 import { useState } from 'react';
+import { DASHBOARD_COLORS } from './constants';
 import { gridArea } from './geometry';
 import { EDGES, type Edge, type GridItem } from './layout';
 import ResizeHandle from './ResizeHandle';
@@ -16,16 +17,25 @@ type GridWidgetProps = {
   resizeStyle?: React.CSSProperties;
   resizingEdge?: Edge;
   onRemove: () => void;
+  /** Whether this widget's settings are open; only meaningful outside edit mode. */
+  selected: boolean;
+  /** Called when the widget is clicked outside edit mode. */
+  onSelect: () => void;
   children: React.ReactNode;
 };
 
-/** A widget placed over its grid cells; drag the centre to move it, the edges to resize it. */
+/**
+ * A widget placed over its grid cells. In edit mode drag the centre to move it and the edges to
+ * resize it; otherwise clicking it selects it.
+ */
 function GridWidget({
   item,
   isEditing,
   resizeStyle,
   resizingEdge,
   onRemove,
+  selected,
+  onSelect,
   children,
 }: GridWidgetProps) {
   const [hovered, setHovered] = useState(false);
@@ -39,7 +49,8 @@ function GridWidget({
 
   return (
     <div
-      ref={ref}
+      // Outside edit mode dnd-kit shouldn't decorate the widget (it adds its own role/tabindex)
+      ref={isEditing ? ref : undefined}
       data-widget-id={item.id}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
@@ -51,18 +62,37 @@ function GridWidget({
         ...gridArea(item),
         position: 'relative',
         zIndex: 1,
-        background: 'red',
+        background: DASHBOARD_COLORS.widgetBackground,
         border: '1px solid black',
+        outline: !isEditing && selected ? `3px solid ${DASHBOARD_COLORS.accent}` : undefined,
+        outlineOffset: 2,
         opacity: isDragging ? 0.5 : undefined,
         ...resizeStyle,
       }}
     >
-      <div
-        ref={handleRef}
-        style={{ width: '100%', height: '100%', cursor: isEditing ? 'grab' : 'default' }}
-      >
-        {children}
-      </div>
+      {isEditing ? (
+        <div key="move" ref={handleRef} style={{ width: '100%', height: '100%', cursor: 'grab' }}>
+          {children}
+        </div>
+      ) : (
+        <div
+          key="select"
+          role="button"
+          tabIndex={0}
+          aria-pressed={selected}
+          aria-label={`Configure ${item.id}`}
+          onClick={onSelect}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelect();
+            }
+          }}
+          style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        >
+          {children}
+        </div>
+      )}
       {isEditing && (
         // Outside the move handle so pressing it never starts a drag; kept in the DOM (just
         // invisible) so it can be reached with Tab and revealed by focus.

@@ -7,6 +7,7 @@ import {
   type GridItems,
   insertLine,
   isLineEmpty,
+  itemAt,
   moveTo,
   removeLine as removeLineFrom,
   type Side,
@@ -30,9 +31,12 @@ export function useGridLayout() {
   const setLineCount = (side: Side, count: number) =>
     isRowSide(side) ? setRows(count) : setCols(count);
 
-  const addItemAt = (cell: Cell) => {
+  /** Adds a 1×1 widget and returns its id, or null if the cell is already covered. */
+  const addItemAt = (cell: Cell): string | null => {
+    if (itemAt(items, cell)) return null;
     const itemId = `item-${nextItemNumber.current++}`;
     setItems((prev) => addItem(prev, itemId, cell));
+    return itemId;
   };
 
   const moveItem = (itemId: string, anchor: Cell) =>

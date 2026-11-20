@@ -2,7 +2,7 @@ import { ChevronRight } from '@carbon/icons-react';
 import { Feedback } from '@dnd-kit/dom';
 import { useDraggable } from '@dnd-kit/react';
 import { useState } from 'react';
-import { HANDLE_OUTSET } from './constants';
+import { DASHBOARD_COLORS, HANDLE_OUTSET } from './constants';
 import type { Edge } from './layout';
 import type { DragData } from './types';
 
@@ -112,7 +112,7 @@ function ResizeHandle({ itemId, edge, isResizing }: ResizeHandleProps) {
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 4,
-        background: active ? 'rgba(0, 0, 0, 0.35)' : 'transparent',
+        background: active ? DASHBOARD_COLORS.handle : 'transparent',
         transition: 'background 120ms',
         ...EDGE_STYLES[edge],
       }}

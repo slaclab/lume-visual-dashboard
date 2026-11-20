@@ -1,6 +1,9 @@
 import { DragDropProvider } from '@dnd-kit/react';
 import { useRef, useState } from 'react';
+import AddWidgetModal from './grid/AddWidgetModal';
 import { GRID_GAP, ROW_MIN_HEIGHT } from './grid/constants';
+import './grid/dashboard.css';
+import { useDashboard } from './grid/dashboard/dashboardContext';
 import EdgeFrame from './grid/EdgeFrame';
 import { followPointer } from './grid/geometry';
 import GridCell from './grid/GridCell';
@@ -9,32 +12,28 @@ import { type Cell, itemAt } from './grid/layout';
 import RemoveWidgetModal from './grid/RemoveWidgetModal';
 import SnapIndicator from './grid/SnapIndicator';
 import { useGridDrag } from './grid/useGridDrag';
-import { useGridLayout } from './grid/useGridLayout';
+import { WIDGETS } from './grid/widgets/registry';
+import { WidgetView } from './grid/widgets/WidgetRenderers';
 
 /**
- * Dashboard grid. In edit mode widgets can be added to empty cells, moved, resized across cells,
- * removed, and rows/columns can be added or removed from the grid's edges.
+ * Dashboard grid. In edit mode widgets of any registered type can be added to empty cells, moved,
+ * resized across cells,
+ * removed, and rows/columns can be added or removed from the grid's edges. Outside edit mode,
+ * clicking a widget selects it for configuration. Must be rendered inside a `DashboardProvider`.
  */
 function DragDropContainer() {
-  const [isEditing, setIsEditing] = useState(false);
-  const layout = useGridLayout();
+  const { isEditing, layout, widgets, addWidget, selected, select } = useDashboard();
   const gridRef = useRef<HTMLDivElement>(null);
   const { handlers, resizing, snaps, isDragging } = useGridDrag(layout, gridRef);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
+  // Empty cell waiting for the user to pick a widget type
+  const [pendingCell, setPendingCell] = useState<Cell | null>(null);
 
   const snapItems = Object.fromEntries(snaps.map((snap) => [snap.id, snap]));
   const isCovered = (cell: Cell) => Boolean(itemAt(layout.items, cell) || itemAt(snapItems, cell));
 
   return (
     <>
-      <label>
-        Editing:
-        <input
-          type="checkbox"
-          checked={isEditing}
-          onChange={(e) => setIsEditing(e.target.checked)}
-        />
-      </label>
       <DragDropProvider {...handlers}>
         <EdgeFrame
           enabled={isEditing}
@@ -57,7 +56,7 @@ function DragDropContainer() {
                 {isEditing && !isCovered(cell) ? (
                   <button
                     type="button"
-                    onClick={() => layout.addItemAt(cell)}
+                    onClick={() => setPendingCell(cell)}
                     style={{ width: '100%', height: '100%', cursor: 'pointer' }}
                   >
                     + Add item
@@ -75,8 +74,10 @@ function DragDropContainer() {
                   resizeStyle={isResizing ? followPointer(resizing) : undefined}
                   resizingEdge={isResizing ? resizing.edge : undefined}
                   onRemove={() => setPendingRemoval(item.id)}
+                  selected={selected?.id === item.id}
+                  onSelect={() => select(selected?.id === item.id ? null : item.id)}
                 >
-                  {item.id}
+                  {widgets[item.id] && <WidgetView widget={widgets[item.id]} />}
                 </GridWidget>
               );
             })}
@@ -86,8 +87,17 @@ function DragDropContainer() {
           </div>
         </EdgeFrame>
       </DragDropProvider>
+      <AddWidgetModal
+        open={pendingCell !== null}
+        onSelect={(type) => {
+          if (pendingCell) addWidget(pendingCell, type);
+          setPendingCell(null);
+        }}
+        onCancel={() => setPendingCell(null)}
+      />
       <RemoveWidgetModal
         itemId={pendingRemoval}
+        widgetName={pendingRemoval ? WIDGETS[widgets[pendingRemoval]?.type]?.name : undefined}
         onConfirm={(itemId) => {
           layout.removeItem(itemId);
           setPendingRemoval(null);

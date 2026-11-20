@@ -7,6 +7,16 @@ vi.stubEnv('VITE_LUME_API_BASE_URL', TEST_BASE_URL);
 vi.stubEnv('VITE_CANOPY_API_BASE_URL', CANOPY_TEST_BASE_URL);
 vi.stubEnv('VITE_CANOPY_API_KEY', CANOPY_TEST_API_KEY);
 
+// jsdom has no ResizeObserver; Carbon's Modal and TextArea need one to mount
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+);
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
   cleanup();
