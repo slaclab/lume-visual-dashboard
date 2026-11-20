@@ -40,6 +40,9 @@ export function useGridLayout() {
 
   const replaceItem = (item: GridItem) => setItems((prev) => ({ ...prev, [item.id]: item }));
 
+  const removeItem = (itemId: string) =>
+    setItems((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => id !== itemId)));
+
   const canRemoveLine = (side: Side) => lineCount(side) > 1 && isLineEmpty(items, side, rows, cols);
 
   const addLine = (side: Side) => {
@@ -60,6 +63,7 @@ export function useGridLayout() {
     addItemAt,
     moveItem,
     replaceItem,
+    removeItem,
     canRemoveLine,
     addLine,
     removeLine,

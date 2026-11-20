@@ -6,19 +6,21 @@ import { followPointer } from './grid/geometry';
 import GridCell from './grid/GridCell';
 import GridWidget from './grid/GridWidget';
 import { type Cell, itemAt } from './grid/layout';
+import RemoveWidgetModal from './grid/RemoveWidgetModal';
 import SnapIndicator from './grid/SnapIndicator';
 import { useGridDrag } from './grid/useGridDrag';
 import { useGridLayout } from './grid/useGridLayout';
 
 /**
  * Dashboard grid. In edit mode widgets can be added to empty cells, moved, resized across cells,
- * and rows/columns can be added or removed from the grid's edges.
+ * removed, and rows/columns can be added or removed from the grid's edges.
  */
 function DragDropContainer() {
   const [isEditing, setIsEditing] = useState(false);
   const layout = useGridLayout();
   const gridRef = useRef<HTMLDivElement>(null);
   const { handlers, resizing, snaps, isDragging } = useGridDrag(layout, gridRef);
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
 
   const snapItems = Object.fromEntries(snaps.map((snap) => [snap.id, snap]));
   const isCovered = (cell: Cell) => Boolean(itemAt(layout.items, cell) || itemAt(snapItems, cell));
@@ -72,6 +74,7 @@ function DragDropContainer() {
                   isEditing={isEditing}
                   resizeStyle={isResizing ? followPointer(resizing) : undefined}
                   resizingEdge={isResizing ? resizing.edge : undefined}
+                  onRemove={() => setPendingRemoval(item.id)}
                 >
                   {item.id}
                 </GridWidget>
@@ -83,6 +86,14 @@ function DragDropContainer() {
           </div>
         </EdgeFrame>
       </DragDropProvider>
+      <RemoveWidgetModal
+        itemId={pendingRemoval}
+        onConfirm={(itemId) => {
+          layout.removeItem(itemId);
+          setPendingRemoval(null);
+        }}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </>
   );
 }
