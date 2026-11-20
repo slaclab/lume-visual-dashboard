@@ -1,9 +1,22 @@
-import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router';
+import { createFileRoute, notFound } from '@tanstack/react-router';
 import { LumeApiError } from '@api/client';
 import { lumeQueries } from '@api/lume-model/queries';
+import ModelNotFound from '@pages/ModelNotFound';
+import ModelLayout from '@layouts/ModelLayout';
+import { type NavigationContext, navItem } from '@/navigation';
 
 /** Layout shared by every mode of a model: `/models/:modelId/*`. */
 export const Route = createFileRoute('/models/$modelId')({
+  beforeLoad: ({ params: { modelId } }): NavigationContext => ({
+    navigation: [
+      navItem('Home', { to: '/' }),
+      navItem('Models', { to: '/models' }),
+      navItem('Overview', { to: '/models/$modelId', params: { modelId } }),
+      navItem('Interactive', { to: '/models/$modelId/interactive', params: { modelId } }),
+      navItem('Streaming', { to: '/models/$modelId/streaming', params: { modelId } }),
+      navItem('Canopy', { to: '/models/$modelId/canopy', params: { modelId } }),
+    ],
+  }),
   loader: async ({ context: { queryClient }, params: { modelId } }) => {
     try {
       await queryClient.query({ ...lumeQueries.config(modelId), staleTime: 'static' });
@@ -15,36 +28,3 @@ export const Route = createFileRoute('/models/$modelId')({
   component: ModelLayout,
   notFoundComponent: ModelNotFound,
 });
-
-function ModelLayout() {
-  const { modelId } = Route.useParams();
-  return (
-    <div>
-      <nav className="model-nav" aria-label="Model modes">
-        <Link to="/models" activeOptions={{ exact: true }}>
-          All models
-        </Link>
-        <Link to="/models/$modelId/interactive" params={{ modelId }}>
-          Interactive
-        </Link>
-        <Link to="/models/$modelId/streaming" params={{ modelId }}>
-          Streaming
-        </Link>
-        <Link to="/models/$modelId/canopy" params={{ modelId }}>
-          Canopy
-        </Link>
-      </nav>
-      <Outlet />
-    </div>
-  );
-}
-
-function ModelNotFound() {
-  const { modelId } = Route.useParams();
-  return (
-    <div role="alert">
-      <p>Model “{modelId}” was not found.</p>
-      <Link to="/models">Back to models</Link>
-    </div>
-  );
-}

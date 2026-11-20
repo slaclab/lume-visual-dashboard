@@ -1,0 +1,9 @@
+/* Dashboard grid colours. Change them here; components reference them through `DASHBOARD_COLORS`. */
+:root {
+  /* Default widget background (a Color widget fills itself with its picked colour instead) */
+  --dashboard-widget-background: #262626;
+  /* Outline of the selected widget, and the snap outline while moving or resizing */
+  --dashboard-accent: #4589ff;
+  /* Resize handles when hovered or dragged */
+  --dashboard-handle: #393939;
+}

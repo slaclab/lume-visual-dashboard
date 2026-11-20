@@ -1,11 +1,11 @@
 import { useModelConfig } from '@hooks/useLumeApi';
-import ModelPageRunner from '@components/ModelPageRunner';
+import ModelPageRunner from '@components/test/ModelPageRunner';
 
-type ModelPageProps = {
+type ModelConfigProps = {
   name?: string;
 };
 
-const ModelPage = ({ name }: ModelPageProps) => {
+const ModelConfig = ({ name }: ModelConfigProps) => {
   const { data: modelConfig, isPending, isError, error } = useModelConfig(name);
 
   if (isPending) {
@@ -19,4 +19,4 @@ const ModelPage = ({ name }: ModelPageProps) => {
   return <ModelPageRunner config={modelConfig} />;
 };
 
-export default ModelPage;
+export default ModelConfig;

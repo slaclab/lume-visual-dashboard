@@ -1,9 +1,9 @@
 import { useModelConfig } from '@hooks/useLumeApi';
-import InteractiveModelRunner from '@components/InteractiveModelRunner';
+import InteractiveModelRunner from '@components/test/InteractiveModelRunner';
 
-type InteractiveProps = { name?: string };
+type InteractiveModeProps = { name?: string };
 
-const InteractivePage = ({ name }: InteractiveProps) => {
+const InteractiveMode = ({ name }: InteractiveModeProps) => {
   const { data: modelConfig, isPending, isError, error } = useModelConfig(name);
 
   if (isPending) {
@@ -18,4 +18,4 @@ const InteractivePage = ({ name }: InteractiveProps) => {
   return <InteractiveModelRunner key={name} name={name} config={modelConfig} />;
 };
 
-export default InteractivePage;
+export default InteractiveMode;

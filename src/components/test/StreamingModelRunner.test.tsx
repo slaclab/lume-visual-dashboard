@@ -8,7 +8,7 @@ import { modelStreamTiming } from '@hooks/useModelStream';
 import type { ConfigResponse } from '@api/lume-model/types';
 import { server, TEST_BASE_URL } from '@test/server';
 import { createSseStream, liveFrame } from '@test/utils';
-import StreamingModelRunner from '@components/StreamingModelRunner';
+import StreamingModelRunner from '@components/test/StreamingModelRunner';
 
 const STREAM_URL = `${TEST_BASE_URL}/api/v1/models/demo/live/stream`;
 
