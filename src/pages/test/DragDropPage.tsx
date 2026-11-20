@@ -4,6 +4,8 @@ import { useDashboard } from '@components/grid/dashboard/dashboardContext';
 import WidgetSettingsPanel from '@components/grid/WidgetSettingsPanel';
 
 const ASIDE_WIDTH = 260;
+// SWAPPS AppHeader height, which `.app-main` pads for (see App.css)
+const HEADER_HEIGHT = '3rem';
 
 /** Slides open while a widget is selected outside edit mode, and collapses otherwise. */
 function ConfigurationAside() {
@@ -23,8 +25,17 @@ function ConfigurationAside() {
         transition: 'width 150ms, margin-right 150ms, border-width 150ms',
       }}
     >
-      {/* Fixed width so the content is clipped, not squeezed, while the panel slides */}
-      <div style={{ width: ASIDE_WIDTH, padding: '1rem', boxSizing: 'border-box' }}>
+      {/* Fixed width so the content is clipped, not squeezed, while the panel slides; long
+          settings (e.g. a list widget's items) scroll within the panel */}
+      <div
+        style={{
+          width: ASIDE_WIDTH,
+          height: '100%',
+          padding: '1rem',
+          boxSizing: 'border-box',
+          overflowY: 'auto',
+        }}
+      >
         <h2>Configuration</h2>
         <WidgetSettingsPanel />
       </div>
@@ -45,11 +56,23 @@ function DragDropControls() {
 
 function DragDropMain() {
   return (
-    <div style={{ border: '1px solid #ccc', padding: '1rem', flex: 1 }}>
+    <div
+      style={{
+        border: '1px solid #ccc',
+        padding: '1rem',
+        flex: 1,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <h2>Drag and Drop Area</h2>
       <DragDropControls />
 
-      <DragDropContainer />
+      {/* The grid takes whatever height is left */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <DragDropContainer />
+      </div>
     </div>
   );
 }
@@ -57,7 +80,15 @@ function DragDropMain() {
 function DragDropPage() {
   return (
     <DashboardProvider>
-      <div style={{ display: 'flex', flexDirection: 'row' }}>
+      {/* Exactly fills the window below the header, so this page never scrolls */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          height: `calc(100dvh - ${HEADER_HEIGHT})`,
+          overflow: 'hidden',
+        }}
+      >
         <ConfigurationAside />
         <DragDropMain />
       </div>

@@ -27,8 +27,9 @@ function EdgeFrame({ enabled, paused, canRemove, onAdd, onRemove, children }: Ed
     <div
       style={{
         display: 'grid',
+        height: '100%',
         gridTemplateColumns: `${track('left')}px minmax(0, 1fr) ${track('right')}px`,
-        gridTemplateRows: `${track('top')}px auto ${track('bottom')}px`,
+        gridTemplateRows: `${track('top')}px minmax(0, 1fr) ${track('bottom')}px`,
         transition: 'grid-template-columns 150ms, grid-template-rows 150ms',
       }}
     >
@@ -44,7 +45,7 @@ function EdgeFrame({ enabled, paused, canRemove, onAdd, onRemove, children }: Ed
             onRemove={() => onRemove(side)}
           />
         ))}
-      <div style={{ gridRow: 2, gridColumn: 2 }}>{children}</div>
+      <div style={{ gridRow: 2, gridColumn: 2, minWidth: 0, minHeight: 0 }}>{children}</div>
     </div>
   );
 }

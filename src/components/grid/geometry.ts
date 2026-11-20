@@ -80,3 +80,34 @@ export function snapCell(grid: HTMLElement, rect: Box, edge: Edge): Cell {
       : Math.min(Infinity, ...cols((b) => b.right > rect.left)),
   };
 }
+
+const DROP_ANIMATION_MS = 200;
+
+/**
+ * Animates `el` from the screen box it occupied before a layout change (`from`) to where it is
+ * now, sliding and resizing together. Used instead of dnd-kit's drop animation, which only knows
+ * about the dragged widget and jumps when its size changes.
+ */
+export function animateFromBox(el: HTMLElement, from: Box, { raise = false } = {}) {
+  if (typeof el.animate !== 'function') return;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  const to = el.getBoundingClientRect();
+  const dx = from.left - to.left;
+  const dy = from.top - to.top;
+  const width = from.right - from.left;
+  const height = from.bottom - from.top;
+  const unchanged = [dx, dy, width - to.width, height - to.height].every((d) => Math.abs(d) < 1);
+  if (unchanged) return;
+
+  // Explicit sizes override the grid's stretch while animating; the content reflows rather than
+  // being scaled
+  const zIndex = raise ? 3 : undefined;
+  el.animate(
+    [
+      { translate: `${dx}px ${dy}px`, width: `${width}px`, height: `${height}px`, zIndex },
+      { translate: '0 0', width: `${to.width}px`, height: `${to.height}px`, zIndex },
+    ],
+    { duration: DROP_ANIMATION_MS, easing: 'ease' }
+  );
+}

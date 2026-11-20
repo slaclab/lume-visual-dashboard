@@ -21,6 +21,8 @@ function GridCell({ cell, children }: GridCellProps) {
       style={{
         gridRow: cell.row + 1,
         gridColumn: cell.col + 1,
+        minWidth: 0,
+        minHeight: 0,
       }}
     >
       {children}

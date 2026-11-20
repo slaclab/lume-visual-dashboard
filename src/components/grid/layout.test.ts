@@ -82,9 +82,26 @@ describe('moveTo', () => {
     expect(next.b).toEqual(item('b', 0, 0, 1, 2));
   });
 
-  it('leaves the layout unchanged when the occupant has a different size', () => {
-    const items = layout(item('a', 0, 0, 1, 2), item('b', 1, 0));
-    expect(moveTo(items, 'a', { row: 1, col: 0 }, 2, 2)).toBe(items);
+  it('swaps positions and sizes with a differently sized occupant', () => {
+    // 'a' is a 2x1 tower on the left, 'b' a 1x1 in the top right
+    const items = layout(item('a', 0, 0, 2, 1), item('b', 0, 1));
+    const next = moveTo(items, 'a', { row: 0, col: 1 }, 2, 2);
+    expect(next.a).toEqual(item('a', 0, 1, 1, 1));
+    expect(next.b).toEqual(item('b', 0, 0, 2, 1));
+  });
+
+  it('swaps with the item under the pointer when the move would cover several', () => {
+    // Dragging the wide 'a' down onto 'c' (pointer on 'c') overlaps both 'b' and 'c'
+    const items = layout(item('a', 0, 0, 1, 2), item('b', 1, 0), item('c', 1, 1));
+    const next = moveTo(items, 'a', { row: 1, col: 0 }, 2, 2, { row: 1, col: 1 });
+    expect(next.a).toEqual(item('a', 1, 1, 1, 1));
+    expect(next.c).toEqual(item('c', 0, 0, 1, 2));
+    expect(next.b).toEqual(items.b);
+  });
+
+  it('leaves the layout unchanged when several items are in the way and none is pointed at', () => {
+    const items = layout(item('a', 0, 0, 1, 2), item('b', 1, 0), item('c', 1, 1));
+    expect(moveTo(items, 'a', { row: 1, col: 0 }, 2, 2, { row: 0, col: 0 })).toBe(items);
   });
 
   it('leaves the layout unchanged when the item would leave the grid', () => {

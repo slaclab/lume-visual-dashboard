@@ -39,8 +39,9 @@ export function useGridLayout() {
     return itemId;
   };
 
-  const moveItem = (itemId: string, anchor: Cell) =>
-    setItems((prev) => moveTo(prev, itemId, anchor, rows, cols));
+  /** Moves a widget's top-left to `anchor`; `pointer` is the cell it was dropped on (for swaps). */
+  const moveItem = (itemId: string, anchor: Cell, pointer: Cell) =>
+    setItems((prev) => moveTo(prev, itemId, anchor, rows, cols, pointer));
 
   const replaceItem = (item: GridItem) => setItems((prev) => ({ ...prev, [item.id]: item }));
 

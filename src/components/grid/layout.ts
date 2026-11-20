@@ -95,15 +95,18 @@ export function clampResize(
 }
 
 /**
- * Moves `itemId` so its top-left lands on `anchor`. If the spot is taken by exactly one item of
- * the same size, the two swap places; any other conflict leaves the layout unchanged.
+ * Moves `itemId` so its top-left lands on `anchor`. If that spot is taken, the item swaps places
+ * and sizes with the item under `pointer` (the cell it was dropped on) or, failing that, the one
+ * item it would land on. Each takes the other's rectangle, so the swap always fits. Anything else
+ * (several items in the way, or dropping off the grid) leaves the layout unchanged.
  */
 export function moveTo(
   items: GridItems,
   itemId: string,
   anchor: Cell,
   rows: number,
-  cols: number
+  cols: number,
+  pointer: Cell = anchor
 ): GridItems {
   const item = items[itemId];
   if (!item) return items;
@@ -115,18 +118,22 @@ export function moveTo(
     return { ...items, [itemId]: candidate };
   }
 
+  const underPointer = itemAt(items, pointer);
   const occupants = Object.values(items).filter(
     (other) => other.id !== itemId && overlaps(other, candidate)
   );
-  if (occupants.length !== 1) return items;
-
-  const [occupant] = occupants;
-  if (occupant.rowSpan !== item.rowSpan || occupant.colSpan !== item.colSpan) return items;
+  const partner =
+    underPointer && underPointer.id !== itemId
+      ? underPointer
+      : occupants.length === 1
+        ? occupants[0]
+        : undefined;
+  if (!partner) return items;
 
   return {
     ...items,
-    [itemId]: { ...item, row: occupant.row, col: occupant.col },
-    [occupant.id]: { ...occupant, row: item.row, col: item.col },
+    [itemId]: { ...partner, id: itemId },
+    [partner.id]: { ...item, id: partner.id },
   };
 }
 

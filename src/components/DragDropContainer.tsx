@@ -1,7 +1,7 @@
 import { DragDropProvider } from '@dnd-kit/react';
 import { useRef, useState } from 'react';
 import AddWidgetModal from './grid/AddWidgetModal';
-import { GRID_GAP, ROW_MIN_HEIGHT } from './grid/constants';
+import { GRID_GAP } from './grid/constants';
 import './grid/dashboard.css';
 import { useDashboard } from './grid/dashboard/dashboardContext';
 import EdgeFrame from './grid/EdgeFrame';
@@ -46,8 +46,11 @@ function DragDropContainer() {
             ref={gridRef}
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
-              gridTemplateRows: `repeat(${layout.rows}, minmax(${ROW_MIN_HEIGHT}px, auto))`,
+              // Equal rows and columns sharing the space the grid is given; minmax(0, …) stops
+              // content such as a large image from growing its track
+              gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${layout.rows}, minmax(0, 1fr))`,
+              height: '100%',
               gap: GRID_GAP,
             }}
           >

@@ -1,8 +1,8 @@
 import type { DragDropProvider } from '@dnd-kit/react';
-import { type ComponentProps, type RefObject, useRef, useState } from 'react';
-import { grabbedCell, isCell, resizedRect, snapCell } from './geometry';
+import { type ComponentProps, type RefObject, useLayoutEffect, useRef, useState } from 'react';
+import { animateFromBox, grabbedCell, isCell, resizedRect, snapCell } from './geometry';
 import { type Cell, clampResize, type GridItem, moveTo, resizeTo, sameRect } from './layout';
-import type { DragData, ResizeState } from './types';
+import type { Box, DragData, ResizeState } from './types';
 import type { GridLayout } from './useGridLayout';
 
 type DragHandlers = Pick<
@@ -38,10 +38,40 @@ export function useGridDrag(layout: DragLayout, gridRef: RefObject<HTMLElement |
     col: cell.col - grabOffset.current.col,
   });
 
+  // Screen boxes of the widgets when a move was dropped, keyed by id. After the grid re-renders,
+  // each widget animates from its box to its new spot (see onDragEnd).
+  const dropFrom = useRef(new Map<string, Box>());
+  const droppedId = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || dropFrom.current.size === 0) return;
+    for (const [id, from] of dropFrom.current) {
+      const el = grid.querySelector<HTMLElement>(
+        `[data-widget-id="${CSS.escape(id)}"]:not([data-dnd-placeholder])`
+      );
+      if (!el) continue;
+      const animate = () => animateFromBox(el, from, { raise: id === droppedId.current });
+      if (!el.hasAttribute('data-dnd-dragging')) {
+        animate();
+        continue;
+      }
+      // dnd-kit returns the dragged widget to the grid just after this render; observer callbacks
+      // run before the next paint, so the animation starts without the widget flashing in place
+      const observer = new MutationObserver(() => {
+        if (el.hasAttribute('data-dnd-dragging')) return;
+        observer.disconnect();
+        animate();
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['data-dnd-dragging'] });
+      setTimeout(() => observer.disconnect(), 1000);
+    }
+    dropFrom.current.clear();
+  });
+
   // Where the moved widget (and a swapped widget) will land; its original spot if the move is invalid
   const [moveSnaps, setMoveSnaps] = useState<GridItem[]>([]);
   const showMoveSnaps = (itemId: string, cell: Cell | null) => {
-    const next = cell ? moveTo(items, itemId, anchorFor(cell), rows, cols) : items;
+    const next = cell ? moveTo(items, itemId, anchorFor(cell), rows, cols, cell) : items;
     const landed = Object.values(next).filter((item) => !sameRect(item, items[item.id]));
     setMoveSnaps(landed.length ? landed : [items[itemId]]);
   };
@@ -104,6 +134,18 @@ export function useGridDrag(layout: DragLayout, gridRef: RefObject<HTMLElement |
     onDragEnd(event) {
       const { source, target } = event.operation;
       const data = source?.data as DragData | undefined;
+      if (data?.kind === 'move' && gridRef.current) {
+        for (const el of gridRef.current.querySelectorAll<HTMLElement>(
+          '[data-widget-id]:not([data-dnd-placeholder])'
+        )) {
+          dropFrom.current.set(el.dataset.widgetId!, el.getBoundingClientRect());
+        }
+        // The dragged widget starts from where it was drawn under the pointer
+        const shape = event.operation.shape?.current.boundingRectangle;
+        if (shape) dropFrom.current.set(data.itemId, shape);
+        droppedId.current = data.itemId;
+      }
+
       const resized = previewRef.current;
       updatePreview(null);
       setMoveSnaps([]);
@@ -116,7 +158,9 @@ export function useGridDrag(layout: DragLayout, gridRef: RefObject<HTMLElement |
         return;
       }
 
-      if (isCell(target?.data)) layout.moveItem(data.itemId, anchorFor(target.data));
+      if (isCell(target?.data)) {
+        layout.moveItem(data.itemId, anchorFor(target.data), target.data);
+      }
     },
   };
 

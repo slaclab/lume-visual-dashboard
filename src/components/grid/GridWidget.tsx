@@ -1,4 +1,5 @@
 import { Close } from '@carbon/icons-react';
+import { Feedback } from '@dnd-kit/dom';
 import { useDraggable } from '@dnd-kit/react';
 import { useState } from 'react';
 import { DASHBOARD_COLORS } from './constants';
@@ -44,6 +45,9 @@ function GridWidget({
     id: item.id,
     data: { kind: 'move', itemId: item.id },
     disabled: !isEditing,
+    // useGridDrag animates every widget into place after a drop, so dnd-kit's own (which only
+    // moves this widget and jumps when its size changes) is turned off
+    plugins: [Feedback.configure({ dropAnimation: null })],
   });
   const showRemove = isEditing && (hovered || focused) && !isDragging && !resizingEdge;
 
@@ -62,6 +66,9 @@ function GridWidget({
         ...gridArea(item),
         position: 'relative',
         zIndex: 1,
+        // Grid items default to their content's size as a minimum; this keeps them to their track
+        minWidth: 0,
+        minHeight: 0,
         background: DASHBOARD_COLORS.widgetBackground,
         border: '1px solid black',
         outline: !isEditing && selected ? `3px solid ${DASHBOARD_COLORS.accent}` : undefined,
